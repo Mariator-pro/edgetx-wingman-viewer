@@ -1,0 +1,140 @@
+{
+  "name": "edgetx-wingman-viewer",
+  "productName": "EdgeTX Wingman Viewer",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Flight map and log viewer for EdgeTX radios",
+  "author": "Mariator-pro",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/desktop/main.cjs",
+  "bin": {
+    "wingman-viewer": "src/cli/main.ts"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && npm run build:desktop && node scripts/licenses.ts",
+    "build:desktop": "esbuild src/desktop/main.ts --bundle --platform=node --format=cjs --target=node22 --external:electron --outfile=dist/desktop/main.cjs --metafile=dist/desktop-meta.json",
+    "start": "node src/cli/main.ts ui",
+    "desktop": "npm run build && electron .",
+    "dist": "npm run build && electron-builder",
+    "cli": "node src/cli/main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.ui.json",
+    "lint": "oxlint"
+  },
+  "dependencies": {
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "@deck.gl/core": "9.4.0",
+    "@deck.gl/layers": "9.4.0",
+    "@deck.gl/mapbox": "9.4.0",
+    "@heroui/react": "3.2.6",
+    "@heroui/styles": "3.2.6",
+    "@loaders.gl/core": "4.5.4",
+    "@luma.gl/core": "9.4.2",
+    "@luma.gl/engine": "9.4.2",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "electron": "44.10.0",
+    "electron-builder": "26.17.0",
+    "electron-updater": "6.8.10",
+    "esbuild": "0.28.2",
+    "maplibre-gl": "6.14.0",
+    "oxlint": "1.88.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  },
+  "build": {
+    "appId": "io.github.mariator-pro.edgetx-wingman-viewer",
+    "files": [
+      "dist/ui/**",
+      "dist/desktop/**",
+      "assets/sample/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "dist/THIRD_PARTY_LICENSES.txt",
+        "to": "THIRD_PARTY_LICENSES.txt"
+      }
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "afterPack": "scripts/after-pack.ts",
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true,
+      "grantFileProtocolExtraPrivileges": false
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "identity": "-",
+      "hardenedRuntime": false,
+      "category": "public.app-category.utilities",
+      "artifactName": "edgetx-wingman-viewer-macos-${arch}-v${version}.${ext}"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "edgetx-wingman-viewer-win64-portable-v${version}.${ext}"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Utility",
+      "artifactName": "edgetx-wingman-viewer-linux-v${version}.${ext}"
+    },
+    "nsis": {
+      "artifactName": "edgetx-wingman-viewer-win64-v${version}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Mariator-pro",
+      "repo": "edgetx-wingman-viewer"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+<linearGradient id="bgC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A86FF"></stop><stop offset="1" stop-color="#0058D0"></stop></linearGradient>
+<linearGradient id="bodyC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DDEBFB"></stop><stop offset="1" stop-color="#BCD3EE"></stop></linearGradient>
+<clipPath id="sqC"><rect x="58" y="58" width="908" height="908" rx="200"></rect></clipPath>
+<clipPath id="bcC"><rect x="88" y="400" width="848" height="488" rx="140"></rect></clipPath>
+</defs>
+
+<rect x="58" y="58" width="908" height="908" rx="200" fill="#3A95FF"></rect>
+<rect x="58" y="122" width="908" height="844" rx="200" fill="url(#bgC)" clip-path="url(#sqC)"></rect>
+<line x1="226" y1="284" x2="300" y2="420" stroke="#D3E5F9" stroke-width="44" stroke-linecap="round"></line>
+<line x1="798" y1="284" x2="724" y2="420" stroke="#D3E5F9" stroke-width="44" stroke-linecap="round"></line>
+<rect x="88" y="400" width="848" height="488" rx="140" fill="url(#bodyC)"></rect>
+<rect x="88" y="400" width="848" height="190" fill="#FFFFFF" opacity="0.28" clip-path="url(#bcC)"></rect>
+<circle cx="252" cy="694" r="116" fill="#A6C0DD"></circle>
+<circle cx="252" cy="694" r="82" fill="#D2E3F7"></circle>
+<circle cx="252" cy="694" r="28" fill="#234E78"></circle>
+<circle cx="772" cy="694" r="116" fill="#A6C0DD"></circle>
+<circle cx="772" cy="694" r="82" fill="#D2E3F7"></circle>
+<circle cx="772" cy="694" r="28" fill="#234E78"></circle>
+<circle cx="512" cy="510" r="204" fill="#FFFFFF"></circle>
+<circle cx="512" cy="510" r="166" fill="#0A72EC"></circle>
+<polygon points="400,420 474,400 474,620 400,600" fill="#FFFFFF"></polygon>
+<polygon points="474,400 550,420 550,600 474,620" fill="#CFE2FA"></polygon>
+<polygon points="550,420 624,400 624,620 550,600" fill="#FFFFFF"></polygon>
+<path d="M424 578 C 468 560, 452 478, 506 488 S 570 470, 594 434" fill="none" stroke="#0A72EC" stroke-width="14" stroke-linecap="round"></path>
+<circle cx="424" cy="578" r="12" fill="#0A72EC"></circle>
+<circle cx="594" cy="434" r="20" fill="#0A72EC"></circle>
+<circle cx="594" cy="434" r="8" fill="#FFFFFF"></circle>
+
+</svg>

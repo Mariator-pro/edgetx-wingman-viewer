@@ -1,0 +1,36 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+@custom-variant dark (&:is(.dark *));
+
+/* HeroUI only colours its components; the page sets background and text itself. */
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
+
+/* The map's own controls sit on the light map in both themes, so they keep light colours. */
+.maplibregl-map .maplibregl-ctrl-attrib,
+.maplibregl-map .maplibregl-ctrl-scale {
+  color: #222b28;
+  background-color: rgb(255 255 255 / 0.85);
+}
+.maplibregl-map .maplibregl-ctrl-attrib a {
+  color: inherit;
+}
+
+/* a strip of the charts opening */
+@keyframes strip-open {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+}
