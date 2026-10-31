@@ -140,7 +140,7 @@ async function ui(): Promise<void> {
     return;
   }
   // a free port; a second start finds this one through the note
-  const server = await startServer({ paths: p, port: 0, staticDir, sampleDir: join(REPO_ROOT, 'assets', 'sample') });
+  const server = await startServer({ paths: p, port: 0, staticDir, sampleDir: join(REPO_ROOT, 'assets', 'sample'), licensesFile: join(REPO_ROOT, 'dist', 'THIRD_PARTY_LICENSES.txt') });
   const forget = await noteServer(p.server, server.open);
   for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => void forget().finally(() => process.exit(0)));
   console.log(`EdgeTX Wingman Viewer is running at ${server.open} (Ctrl+C to stop)`);

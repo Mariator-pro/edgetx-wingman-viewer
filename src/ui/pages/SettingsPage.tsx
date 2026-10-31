@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import type { MapSettingsView } from '../../server/api.ts';
 import { isStickMode } from '../../core/kinds.ts';
 import { get, post } from '../api.ts';
+import { AboutCard } from '../components/About.tsx';
 import { usePrefs } from '../usePrefs.ts';
 
 type Run = (fn: () => Promise<unknown>) => void;
@@ -48,16 +49,7 @@ export function SettingsPage({ run }: { run: Run }) {
           </Button>
         </Card.Footer>
       </Card>
-      <Card>
-        <Card.Header>
-          <Card.Title>{t.about}</Card.Title>
-          <Card.Description>
-            EdgeTX Wingman Viewer · {t.version(__APP_VERSION__)}
-            <br />
-            {t.license}
-          </Card.Description>
-        </Card.Header>
-      </Card>
+      <AboutCard />
     </div>
   );
 }

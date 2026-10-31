@@ -73,6 +73,11 @@ export interface TrackView extends Track {
 }
 
 // Where the map gets its tiles from; the street map's address can be changed, satellite needs the user's own key.
+// The open source licenses of the bundled packages, as the build wrote them.
+export interface LicensesView {
+  text: string;
+}
+
 export interface MapSettingsView {
   tiles: string;
   defaultTiles: string;

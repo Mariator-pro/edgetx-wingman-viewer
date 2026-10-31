@@ -8,6 +8,7 @@ export const ERRORS = {
   notLogFile: (p: { file: string }) => `${p.file} isn’t an EdgeTX log. Choose a .csv file from the LOGS folder of the SD card.`,
   logTooLarge: (p: { file: string }) => `${p.file} is larger than 100 MB.`,
   radioNotConnected: () => 'The radio is no longer connected.',
+  licensesMissing: () => 'The list of open source licenses is missing. Build the app first with “npm run build”.',
   appUpdateFailed: () => 'Couldn’t download the app update. Check your internet connection and try again.',
 };
 

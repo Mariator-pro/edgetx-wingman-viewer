@@ -4,7 +4,7 @@ import { request } from 'node:http';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { paths } from '../src/core/paths.ts';
-import type { FlightDetailView, FlightView, MapSettingsView, StateView, TrackView } from '../src/server/api.ts';
+import type { FlightDetailView, FlightView, LicensesView, MapSettingsView, StateView, TrackView } from '../src/server/api.ts';
 import { noteServer, runningServer } from '../src/server/running.ts';
 import { startServer, type RunningServer } from '../src/server/server.ts';
 
@@ -26,7 +26,13 @@ beforeAll(async () => {
   // a copy of a simulator card, so clean up deletes nothing in the repo
   await cp(join(FIXTURES, 'elrs-two-flights'), join(dir, 'card'), { recursive: true });
   process.env.WINGMAN_VIEWER_VOLUMES = join(dir, 'card');
-  server = await startServer({ paths: paths(join(dir, 'data')), port: 0, sampleDir: join(import.meta.dirname, '..', 'assets', 'sample'), pollMs: 60000 });
+  server = await startServer({
+    paths: paths(join(dir, 'data')),
+    port: 0,
+    sampleDir: join(import.meta.dirname, '..', 'assets', 'sample'),
+    licensesFile: join(dir, 'THIRD_PARTY_LICENSES.txt'),
+    pollMs: 60000,
+  });
 });
 
 afterAll(async () => {
@@ -131,6 +137,14 @@ describe('server', () => {
     expect(await csp()).toContain('connect-src \'self\' https://tiles.example.org https://ibasemaps-api.arcgis.com;');
     expect((await post('/api/map', { tiles: m.defaultTiles })).status).toBe(200);
     expect(await csp()).toContain("connect-src 'self' https://tile.openstreetmap.org;");
+  });
+
+  it('sends the open source licenses from the build, or says they are missing', async () => {
+    expect(await (await api('/api/licenses')).json()).toMatchObject({ code: 'licensesMissing' });
+    await writeFile(join(dir, 'THIRD_PARTY_LICENSES.txt'), 'THIRD-PARTY SOFTWARE NOTICES\n');
+    const res = await api('/api/licenses');
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as LicensesView).text).toBe('THIRD-PARTY SOFTWARE NOTICES\n');
   });
 
   it('imports a log by name; refuses names with a path and too large files', async () => {

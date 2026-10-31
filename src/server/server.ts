@@ -22,6 +22,7 @@ import {
   type FlightDetailView,
   type FlightView,
   type MapSettingsView,
+  type LicensesView,
   type PrefsView,
   type ProgressEvent,
   type StateView,
@@ -33,6 +34,7 @@ export interface ServerOptions {
   port: number;
   staticDir?: string; // built interface; without it only /api is served (Vite serves the page)
   sampleDir?: string; // the built-in sample flight, as a small SD card
+  licensesFile?: string; // THIRD_PARTY_LICENSES.txt from the build, shown under About
   pollMs?: number;
   appUpdates?: AppUpdates; // desktop app only
 }
@@ -398,6 +400,11 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
         if (entry) entry.cleanable = (await library.cleanable(c)).length;
         return { count };
       });
+    },
+    'GET /api/licenses': async (): Promise<LicensesView> => {
+      const text = o.licensesFile ? await readFile(o.licensesFile, 'utf8').catch(() => undefined) : undefined;
+      if (text === undefined) throw new HttpError(404, 'licensesMissing');
+      return { text };
     },
     'POST /api/open-folder': async () => openFolder(p.root),
     'POST /api/app-update': async () => {

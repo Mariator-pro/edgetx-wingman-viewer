@@ -104,6 +104,7 @@ To export many flights at once, use the [command line](docs/command-line.md).
 - **Map**: the street map comes from OpenStreetMap. Change the tile address only if you use another tile server with the same layout. Satellite imagery comes from Esri and needs your own ArcGIS key (a free account on ArcGIS Location Platform with basemap access); the app has no key of its own.
 - **Stick mode for imported logs**: logs copied from a radio use the stick mode set on it. For imported logs the app doesn't know it, so choose it here (mode 2 by default).
 - **Data folder**: "Open folder" shows where the app keeps your logs (see below).
+- **About**: the version, a link to the app's MIT license and its source code, and "Show licenses" with the licenses of all open source packages inside the app.
 
 Appearance (light or dark) and language are chosen at the bottom of the sidebar.
 
@@ -127,4 +128,4 @@ You do not need any of this to use the app. It is for those who want to go furth
 
 ## License
 
-Released under the [MIT License](LICENSE). The app bundles open source packages under their own licenses, listed in `THIRD_PARTY_LICENSES.txt` in the app's resources folder. Electron's own license files (`LICENSE.electron.txt`, `LICENSES.chromium.html`) are in the same folder on macOS and in the app folder on Windows and Linux. Map data © OpenStreetMap contributors; the attribution of the map in use is always shown on the map.
+Released under the [MIT License](LICENSE). The app bundles open source packages under their own licenses, listed under Settings, About, "Show licenses" and in `THIRD_PARTY_LICENSES.txt` in the app's resources folder. Electron's own license files (`LICENSE.electron.txt`, `LICENSES.chromium.html`) are in the same folder on macOS and in the app folder on Windows and Linux. Map data © OpenStreetMap contributors; the attribution of the map in use is always shown on the map.

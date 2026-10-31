@@ -223,6 +223,14 @@ const en = {
   about: 'About',
   version: (v: string) => `Version ${v}`,
   license: 'Free software under the MIT license.',
+  thirdParty: 'It contains open source packages under their own licenses.',
+  showLicenses: 'Show licenses',
+  mitLicense: 'MIT license',
+  sourceCode: 'Source code',
+  licensesTitle: 'Open source licenses',
+  licensesLoading: 'Loading licenses …',
+  licensesIntro: (n: number) =>
+    `The app contains these ${n} open source packages. Open one to read its license. Electron and Chromium bring their own license files, which are in the app’s folder.`,
 
   errors: ERRORS,
 };

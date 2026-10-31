@@ -219,6 +219,14 @@ export const de: Texts = {
   about: 'Über die App',
   version: (v) => `Version ${v}`,
   license: 'Freie Software unter der MIT-Lizenz.',
+  thirdParty: 'Sie enthält Open-Source-Pakete unter ihren eigenen Lizenzen.',
+  showLicenses: 'Lizenzen anzeigen',
+  mitLicense: 'MIT-Lizenz',
+  sourceCode: 'Quellcode',
+  licensesTitle: 'Open-Source-Lizenzen',
+  licensesLoading: 'Lizenzen werden geladen …',
+  licensesIntro: (n) =>
+    `Die App enthält diese ${n} Open-Source-Pakete. Öffne eines, um seine Lizenz zu lesen. Electron und Chromium bringen eigene Lizenzdateien mit, sie liegen im Ordner der App.`,
 
   errors: {
     busy: (p) => `Eine andere Aufgabe läuft noch (${p.op}). Versuche es noch einmal, wenn sie fertig ist.`,
@@ -228,6 +236,7 @@ export const de: Texts = {
     notLogFile: (p) => `${p.file} ist kein EdgeTX-Log. Wähle eine .csv-Datei aus dem Ordner LOGS der SD-Karte.`,
     logTooLarge: (p) => `${p.file} ist größer als 100 MB.`,
     radioNotConnected: () => 'Der Sender ist nicht mehr verbunden.',
+    licensesMissing: () => 'Die Liste der Open-Source-Lizenzen fehlt. Baue die App zuerst mit „npm run build“.',
     appUpdateFailed: () => 'Das App-Update ließ sich nicht herunterladen. Prüfe deine Internetverbindung und versuche es noch einmal.',
   },
 };
