@@ -92,18 +92,18 @@ export function ViewerPage(props: {
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             {f.sample && (
-              <Chip size="sm" variant="soft" color="accent">
+              <Chip size="sm" variant="soft" color="accent" className={BADGE}>
                 {t.sampleFlight}
               </Chip>
             )}
             {facts.map((x) => (
-              <Chip key={x} size="sm" variant="secondary" className="tabular-nums">
+              <Chip key={x} size="sm" variant="secondary" className={`${BADGE} tabular-nums`}>
                 {x}
               </Chip>
             ))}
             {f.pack && <PackChip pack={f.pack} />}
             {f.tags.map((x) => (
-              <Chip key={x} size="sm" variant="soft" color="accent" className="pr-1">
+              <Chip key={x} size="sm" variant="soft" color="accent" className={`${BADGE} pr-1`}>
                 {x}
                 <CloseButton aria-label={t.removeTag(x)} className="size-4" onPress={() => setTags(f.tags.filter((y) => y !== x))} />
               </Chip>
@@ -251,6 +251,9 @@ export function ViewerPage(props: {
   );
 }
 
+// Same height for every badge in the row, chips and buttons alike.
+const BADGE = 'h-7 px-2.5 text-xs';
+
 // The flight's pack; its details as Lipo Nanny keeps them now, not as they were at the flight.
 function PackChip({ pack }: { pack: PackView }) {
   const { t } = usePrefs();
@@ -262,7 +265,7 @@ function PackChip({ pack }: { pack: PackView }) {
   if (pack.lastUsed) rows.push([t.packLastUsed, new Date(`${pack.lastUsed}T12:00:00`).toLocaleDateString(t.locale, { dateStyle: 'medium' })]);
   return (
     <Popover>
-      <Button size="sm" variant="secondary" className="h-7 gap-1.5 px-2.5 text-xs font-normal" aria-label={`${t.packDetails}: ${name}`}>
+      <Button size="sm" variant="secondary" className={`${BADGE} gap-1.5 font-medium`} aria-label={`${t.packDetails}: ${name}`}>
         <BatteryIcon size={14} />
         {name}
         {pack.cycles !== undefined && <span className="text-muted">· {t.cycles(pack.cycles)}</span>}

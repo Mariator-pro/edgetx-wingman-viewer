@@ -17,6 +17,18 @@ body {
   color: var(--color-foreground);
 }
 
+/* Button groups on the map get the surface colour behind them (#18181b in the dark theme), like the
+   cards and fields there, instead of HeroUI's grey; the chosen toggle button is see-through on its own. */
+.map-control {
+  border-radius: 1.5rem;
+  background-color: var(--surface);
+}
+.map-control .toggle-button,
+.map-control .button {
+  --toggle-button-bg: var(--surface);
+  --button-bg: var(--surface);
+}
+
 /* The map's own controls sit on the light map in both themes, so they keep light colours. */
 .maplibregl-map .maplibregl-ctrl-attrib,
 .maplibregl-map .maplibregl-ctrl-scale {

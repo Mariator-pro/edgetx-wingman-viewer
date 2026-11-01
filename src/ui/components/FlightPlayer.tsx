@@ -18,9 +18,6 @@ import { LayersIcon, MinusIcon, PauseIcon, PlayIcon, PlusIcon } from './icons.ts
 
 const SPEEDS = [1, 2, 5, 10, 30];
 // square buttons; the group's rounded corners come from clipping
-const MAP_BUTTON = 'size-10 min-w-0 rounded-none!';
-// on the map: a white pill, the chosen view dark
-const VIEW_GROUP = 'rounded-full bg-surface p-0.5 shadow-sm [&_[data-selected=true]]:bg-foreground [&_[data-selected=true]]:text-background';
 const BAD: EventKind[] = ['link-lost', 'failsafe'];
 const GOOD: EventKind[] = ['link-back', 'gps-back'];
 const NOTICE: EventKind[] = ['rth', 'land', 'gps-lost'];
@@ -213,14 +210,14 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
                       disallowEmptySelection
                       selectedKeys={[view]}
                       onSelectionChange={(k) => setView(([...k][0] as View) ?? '2d')}
-                      className={VIEW_GROUP}
+                      className="map-control shadow-sm"
                     >
                       <ToggleButton id="2d">{t.view2d}</ToggleButton>
                       <ToggleButton id="3d">{t.view3d}</ToggleButton>
                     </ToggleButtonGroup>
                     {choices.length > 0 && (
                       <Select aria-label={t.colorBy} selectedKey={colorBy} onSelectionChange={(k) => k !== null && setColorBy(k as ColorBy)}>
-                        <Select.Trigger className="rounded-full bg-surface shadow-sm">
+                        <Select.Trigger className="shadow-sm">
                           <span className="mr-1 text-muted">{t.colorBy}</span>
                           <Select.Value className="font-semibold" />
                           <Select.Indicator />
@@ -283,15 +280,15 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
                     {base === 'satellite' && satError && <p className="m-0 text-danger">{t.satelliteRefused}</p>}
                   </Card>
                 </div>
-                <ButtonGroup orientation="vertical" variant="ghost" className="absolute right-4 top-4 z-10 w-10 overflow-hidden rounded-xl bg-surface shadow-sm">
-                  <Button isIconOnly className={MAP_BUTTON} aria-label={t.zoomIn} onPress={() => mapRef.current?.zoomIn()}>
+                <ButtonGroup orientation="vertical" variant="tertiary" className="map-control absolute right-4 top-4 z-10 shadow-sm">
+                  <Button isIconOnly aria-label={t.zoomIn} onPress={() => mapRef.current?.zoomIn()}>
                     <PlusIcon size={16} />
                   </Button>
-                  <Button isIconOnly className={`${MAP_BUTTON} border-t border-border`} aria-label={t.zoomOut} onPress={() => mapRef.current?.zoomOut()}>
+                  <Button isIconOnly aria-label={t.zoomOut} onPress={() => mapRef.current?.zoomOut()}>
                     <MinusIcon size={16} />
                   </Button>
                   <Dropdown>
-                    <Button isIconOnly variant="ghost" className={`${MAP_BUTTON} border-t border-border`} aria-label={t.baseMap}>
+                    <Button isIconOnly variant="tertiary" aria-label={t.baseMap}>
                       <LayersIcon size={16} />
                     </Button>
                     <Dropdown.Popover placement="left top">
