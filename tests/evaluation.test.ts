@@ -81,6 +81,22 @@ describe('warning levels and pack', () => {
     expect(colorChoices({ ...plain, key: 'k', start: '', duration: 0, takeoff: 0, landing: 0, events: [], hints: [] })).not.toContain('stage');
   });
 
+  it('reads -1 of a core as no value, not as a level', () => {
+    // LNst -1 without a pack until 10 s, LSst 1, -1 (no link judged) and 1 again, GHst -1 without a stable fix
+    const gaps = span(5, 30, (s) =>
+      link('ACRO', { gps: north(s * 5), extra: [s < 10 ? '-1' : '0', '1', s >= 15 && s < 18 ? '-1' : '1', s < 12 ? '-1' : '0'] }),
+    );
+    const { f, track } = flight(gaps, CORES);
+    const tv = { ...track, key: 'k', start: '', duration: 0, takeoff: 0, landing: 0, events: [], hints: [] } satisfies TrackView;
+    const at = (s: number) => tv.rows.t.findIndex((x) => x === s);
+    expect(levelsOf(tv, 'lnst')![at(6)]).toBeNull();
+    expect(levelsOf(tv, 'lnst')![at(12)]).toBe(0);
+    expect(levelsOf(tv, 'lsst')![at(16)]).toBeNull();
+    expect(levelsOf(tv, 'stage')![at(16)]).toBe(0);
+    expect(f.hints.filter((h) => h.kind === 'link-warning')).toHaveLength(1);
+    expect(f.hints.some((h) => h.kind === 'max-altitude' || h.kind === 'gps-lost')).toBe(false);
+  });
+
   it("finds the flight's pack in Lipo Nanny's settings, retired ones in the archive", () => {
     const lipo = parseLipoConfig(`return {
       ["batteries"] = { { ["id"] = "bat_001", ["name"] = "6s 1300", ["chemistry"] = "LiPo", ["cells"] = 6, ["capacityMah"] = 1300,

@@ -70,6 +70,10 @@ export function mapRoles(schema: Schema, lipo?: LipoModel): RoleMap {
   return { index, unit };
 }
 
+// The cores write -1 into their level sensors when they have nothing to judge (no telemetry, sensor missing,
+// no pack or no stable GPS fix): no value, not a level.
+const NO_VALUE_BELOW_ZERO: readonly Role[] = ['lnst', 'lsst', 'ghst'];
+
 const num = (s: string | undefined) => {
   if (s === undefined || s.trim() === '') return undefined;
   const v = Number(s);
@@ -85,7 +89,7 @@ export function samples(log: LogFile, lipo?: LipoModel): { samples: Sample[]; ro
       const c = index[r];
       if (c === undefined) continue;
       const v = num(line.cells[c]);
-      if (v !== undefined) values[r] = v;
+      if (v !== undefined && !(v < 0 && NO_VALUE_BELOW_ZERO.includes(r))) values[r] = v;
     }
     const s: Sample = { i, t: line.t, values };
     if (index.fm !== undefined) {

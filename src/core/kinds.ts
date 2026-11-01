@@ -26,7 +26,7 @@ export interface ExtraValue {
 }
 
 // Levels of the cores per log line: Lipo Nanny and Link Sentinel 0 OK, 1 warning, 2 critical; GPS Homer's reason
-// (0 none, else max. altitude, max. distance or GPS lost).
+// (0 none, else max. altitude, max. distance or GPS lost). -1 in the log (nothing to judge) is no value.
 export const STAGES = ['lnst', 'lsst', 'ghst'] as const;
 export type StageRole = (typeof STAGES)[number];
 
