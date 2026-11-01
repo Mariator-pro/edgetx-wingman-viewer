@@ -28,6 +28,7 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
     pick(initial.theme, ['light', 'dark'] as const, window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   );
   const [sticks, setSticks] = useState<StickMode>(isStickMode(initial.sticks) ? initial.sticks : 2);
+  const [attitudeShown, setAttitudeShown] = useState(initial.attitude !== 'hidden');
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
@@ -46,7 +47,11 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
     setSticks(m);
     save({ sticks: m });
   };
+  const chooseAttitude = (shown: boolean) => {
+    setAttitudeShown(shown);
+    save({ attitude: shown ? 'shown' : 'hidden' });
+  };
   return (
-    <PrefsContext value={{ t: TEXTS[lang], lang, setLang: chooseLang, theme, setTheme: chooseTheme, sticks, setSticks: chooseSticks }}>{children}</PrefsContext>
+    <PrefsContext value={{ t: TEXTS[lang], lang, setLang: chooseLang, theme, setTheme: chooseTheme, sticks, setSticks: chooseSticks, attitudeShown, setAttitudeShown: chooseAttitude }}>{children}</PrefsContext>
   );
 }

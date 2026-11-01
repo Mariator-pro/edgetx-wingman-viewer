@@ -113,6 +113,7 @@ export interface PrefsView {
   lang?: string;
   theme?: 'light' | 'dark';
   sticks?: StickMode; // stick mode for logs without the radio's settings
+  attitude?: 'shown' | 'hidden'; // the attitude view on the map, or only its button
 }
 export const PREFS_META = 'wingman-viewer-prefs';
 

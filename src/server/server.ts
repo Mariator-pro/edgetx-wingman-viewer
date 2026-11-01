@@ -426,15 +426,16 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
       );
     },
     'POST /api/prefs': async (req) => {
-      const { lang, theme, sticks } = await body<PrefsView>(req);
+      const { lang, theme, sticks, attitude } = await body<PrefsView>(req);
       if (
         (lang !== undefined && !/^[a-z]{2}$/.test(lang)) ||
         (theme !== undefined && theme !== 'light' && theme !== 'dark') ||
-        (sticks !== undefined && !isStickMode(sticks))
+        (sticks !== undefined && !isStickMode(sticks)) ||
+        (attitude !== undefined && attitude !== 'shown' && attitude !== 'hidden')
       ) {
         throw new HttpError(400, 'invalidRequest', { what: 'prefs' });
       }
-      s.ui = { ...s.ui, ...(lang ? { lang } : {}), ...(theme ? { theme } : {}), ...(sticks ? { sticks } : {}) };
+      s.ui = { ...s.ui, ...(lang ? { lang } : {}), ...(theme ? { theme } : {}), ...(sticks ? { sticks } : {}), ...(attitude ? { attitude } : {}) };
       await saveSettings(p.settings, s);
     },
   };

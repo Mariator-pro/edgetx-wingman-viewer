@@ -134,6 +134,8 @@ export const de: Texts = {
   jumpTo: (what, at) => `Zu ${what} bei ${at} springen`,
   values: 'Werte',
   attitude: 'Lage',
+  hideAttitude: 'Lage ausblenden',
+  showAttitude: 'Lage einblenden',
   airframe: 'Art des Modells',
   airframeNames: { copter: 'Copter', plane: 'Flugzeug', wing: 'Nurflügel', arrow: 'Pfeil' },
   attitudeValues: (pitch, roll, yaw) => `Nick ${pitch}° · Rollen ${roll}° · Kurs ${yaw}°`,

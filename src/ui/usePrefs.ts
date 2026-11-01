@@ -12,6 +12,8 @@ export interface Prefs {
   setTheme: (t: Theme) => void;
   sticks: StickMode; // for logs without the radio's settings
   setSticks: (m: StickMode) => void;
+  attitudeShown: boolean; // the attitude view on the map, or only its button
+  setAttitudeShown: (shown: boolean) => void;
 }
 
 export const PrefsContext = createContext<Prefs | null>(null);

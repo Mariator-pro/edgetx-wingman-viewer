@@ -45,7 +45,7 @@ export const validKey = (v: unknown): v is string => typeof v === 'string' && v.
 export const tilesOrigin = (tiles: string) => new URL(tiles.replace(/[{}]/g, '')).origin;
 
 export interface Settings {
-  ui?: { lang?: string; theme?: 'light' | 'dark'; sticks?: StickMode }; // interface language, theme and stick mode as last chosen (for logs without the radio's settings)
+  ui?: { lang?: string; theme?: 'light' | 'dark'; sticks?: StickMode; attitude?: 'shown' | 'hidden' }; // interface language, theme, stick mode (for logs without the radio's settings) and the attitude view on the map, as last chosen
   map?: MapSettings;
   lastSync?: string; // when logs were last copied from an SD card
 }
@@ -60,6 +60,7 @@ export async function loadSettings(file: string): Promise<Settings> {
       ...(typeof ui.lang === 'string' && /^[a-z]{2}$/.test(ui.lang) ? { lang: ui.lang } : {}),
       ...(ui.theme === 'light' || ui.theme === 'dark' ? { theme: ui.theme } : {}),
       ...(isStickMode(ui.sticks) ? { sticks: ui.sticks } : {}),
+      ...(ui.attitude === 'shown' || ui.attitude === 'hidden' ? { attitude: ui.attitude } : {}),
     },
     map: {
       ...(validTiles(map.tiles) ? { tiles: map.tiles } : {}),

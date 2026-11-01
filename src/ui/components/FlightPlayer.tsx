@@ -14,7 +14,7 @@ import { Charts, ChartTools, type Marks, type Range } from './Charts.tsx';
 import { FlightMap, type Base, type View } from './FlightMap.tsx';
 import { Scatter } from './Scatter.tsx';
 import { Sticks } from './Sticks.tsx';
-import { LayersIcon, MinusIcon, PauseIcon, PlayIcon, PlusIcon } from './icons.tsx';
+import { FitIcon, LayersIcon, MinusIcon, PauseIcon, PlayIcon, PlusIcon } from './icons.tsx';
 
 const SPEEDS = [1, 2, 5, 10, 30];
 // square buttons; the group's rounded corners come from clipping
@@ -38,7 +38,7 @@ function ownsSpace(el: EventTarget | null): boolean {
 }
 
 export function FlightPlayer({ flightKey }: { flightKey: string }) {
-  const { t, sticks } = usePrefs();
+  const { t, sticks, attitudeShown } = usePrefs();
   const [loaded, setTrack] = useState<TrackView>();
   const [hover, setHover] = useState<number>();
   const [range, setRange] = useState<Range>();
@@ -59,6 +59,7 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
   const [base, setBase] = useState<Base>('street');
   const [colorBy, setColorBy] = useState<ColorBy>('fm');
   const [satError, setSatError] = useState(false);
+  const [wholeFlight, setWholeFlight] = useState(0);
   const [airframe, setAirframe] = useState<Airframe>();
   const clockRef = useRef({ time: 0, last: 0 });
   const mapRef = useRef<MapLibre | null>(null);
@@ -167,11 +168,39 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
   const choices = colorChoices(track);
   const pct = (s: number) => `${(s / (track.duration || 1)) * 100}%`;
   const markColor = (k: EventKind) => (BAD.includes(k) ? 'bg-danger' : GOOD.includes(k) ? 'bg-success' : NOTICE.includes(k) ? 'bg-warning' : 'bg-foreground');
-  const legendTitle = colorBy === 'fm' || byLevel(colorBy) ? t.colorNames[colorBy] : `${t.colorNames[colorBy]}${unit(colorBy as TrackValue) ? ` (${unit(colorBy as TrackValue)})` : ''}`;
   const tick = (v: number) => v.toLocaleString(t.locale, { maximumFractionDigits: DIGITS[colorBy as TrackValue] ?? 0 });
+  const scaleUnit = colorBy === 'fm' || byLevel(colorBy) ? '' : unit(colorBy as TrackValue);
+  // a hint picked: jump there and zoom the charts around it
+  const pickHint = (s: number) => {
+    seek(s);
+    setRange([Math.max(0, s - HINT_ZOOM_S), Math.min(track.duration, s + HINT_ZOOM_S)]);
+  };
 
   return (
     <div className="flex flex-col gap-6">
+      {track.hints.length > 0 && (
+        // the hints first, without scrolling; over one, map and values show its moment
+        <Alert status="warning" className="items-center">
+          <Alert.Indicator />
+          <Alert.Content className="flex-row flex-wrap items-center gap-2">
+            <Alert.Title className="mr-1">{t.hintCount(track.hints.length)}</Alert.Title>
+            {track.hints.map((h) => (
+              <Button
+                key={`${h.t}${h.kind}`}
+                size="sm"
+                variant="tertiary"
+                aria-label={t.jumpTo(t.hintNames[h.kind], fromTakeoff(h.t, track.takeoff))}
+                onPress={() => pickHint(h.t)}
+                onHoverStart={() => setHover(h.t)}
+                onHoverEnd={() => setHover(undefined)}
+              >
+                <span className="font-mono tabular-nums text-muted">{fromTakeoff(h.t, track.takeoff)}</span>
+                {t.hintNames[h.kind]}
+              </Button>
+            ))}
+          </Alert.Content>
+        </Alert>
+      )}
       <div className="flex flex-wrap gap-4">
         <Card className="relative h-[520px] min-w-0 flex-[999_1_520px] overflow-hidden p-0">
           <div className="contents">
@@ -186,6 +215,8 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
                 label={t.map}
                 onSatelliteError={() => setSatError(true)}
                 onMap={(m) => (mapRef.current = m)}
+                roomRight={!!track.attitude && attitudeShown}
+                wholeFlight={wholeFlight}
               />
             ) : (
               <div className="flex h-full items-center justify-center p-8 pb-32">
@@ -235,49 +266,30 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
                       </Select>
                     )}
                   </div>
-                  <Card className="w-52 gap-2 p-3 text-xs">
-                    <Card.Title className="text-sm">{legendTitle}</Card.Title>
+                  {/* one slim row under "Color by", so the path stays free */}
+                  <Card className="max-w-md flex-row flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-xs">
                     {colors.scale && (
-                      <div className="flex flex-col gap-1">
-                        <div className="h-2 rounded-full" style={{ background: colors.scale.css }} />
-                        <div className="flex justify-between tabular-nums text-muted">
-                          {colors.scale.ticks.map((v, i) => (
-                            <span key={i}>{tick(v)}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {colors.levels && (
-                      <ul className="m-0 flex list-none flex-wrap gap-x-3 gap-y-1 p-0">
-                        {colors.levels.map((c, i) => (
-                          <li key={i} className="flex items-center gap-1.5">
-                            <i className="inline-block h-1 w-4 rounded" style={{ background: rgbCss(c) }} />
-                            {t.stageNames[i]}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {colors.modes && (
-                      <ul className="m-0 flex list-none flex-wrap gap-x-3 gap-y-1 p-0">
-                        {colors.modes.map((l) => (
-                          <li key={l.label} className="flex items-center gap-1.5">
-                            <i className="inline-block h-1 w-4 rounded" style={{ background: rgbCss(l.color) }} />
-                            {l.label}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <div className="flex gap-4">
-                      <span className="flex items-center gap-1.5">
-                        <i className="inline-block size-2.5 rounded-full border-2 border-foreground" />
-                        {t.markStart}
+                      <span className="flex items-center gap-1.5 tabular-nums text-muted">
+                        {tick(colors.scale.ticks[0]!)}
+                        <i className="inline-block h-2 w-24 rounded-full" style={{ background: colors.scale.css }} />
+                        {`${tick(colors.scale.ticks.at(-1)!)} ${scaleUnit}`.trim()}
                       </span>
-                      <span className="flex items-center gap-1.5">
-                        <i className="inline-block size-2.5 bg-foreground" />
-                        {t.markEnd}
+                    )}
+                    {(colors.levels?.map((c, i) => ({ label: t.stageNames[i]!, color: c })) ?? colors.modes ?? []).map((l) => (
+                      <span key={l.label} className="flex items-center gap-1.5">
+                        <i className="inline-block h-1 w-4 rounded" style={{ background: rgbCss(l.color) }} />
+                        {l.label}
                       </span>
-                    </div>
-                    {base === 'satellite' && satError && <p className="m-0 text-danger">{t.satelliteRefused}</p>}
+                    ))}
+                    <span className="flex items-center gap-1.5">
+                      <i className="inline-block size-2.5 rounded-full border-2 border-foreground" />
+                      {t.markStart}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <i className="inline-block size-2.5 bg-foreground" />
+                      {t.markEnd}
+                    </span>
+                    {base === 'satellite' && satError && <p className="m-0 w-full text-danger">{t.satelliteRefused}</p>}
                   </Card>
                 </div>
                 <ButtonGroup orientation="vertical" variant="tertiary" className="map-control absolute right-4 top-4 z-10 shadow-sm">
@@ -286,6 +298,9 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
                   </Button>
                   <Button isIconOnly aria-label={t.zoomOut} onPress={() => mapRef.current?.zoomOut()}>
                     <MinusIcon size={16} />
+                  </Button>
+                  <Button isIconOnly aria-label={t.wholeFlight} onPress={() => setWholeFlight((n) => n + 1)}>
+                    <FitIcon size={16} />
                   </Button>
                   <Dropdown>
                     <Button isIconOnly variant="tertiary" aria-label={t.baseMap}>
@@ -505,10 +520,7 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
                 empty={t.noHints}
                 items={track.hints.map((h) => ({ t: h.t, text: t.hintNames[h.kind] }))}
                 takeoff={track.takeoff}
-                onPick={(s) => {
-                  seek(s);
-                  setRange([Math.max(0, s - HINT_ZOOM_S), Math.min(track.duration, s + HINT_ZOOM_S)]);
-                }}
+                onPick={pickHint}
               />
               {track.antennas && <AntennaRose rose={track.antennas} />}
             </div>

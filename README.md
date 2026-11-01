@@ -104,7 +104,7 @@ To export many flights at once, use the [command line](docs/command-line.md).
 
 ### 5. Settings
 
-- **Map**: the street map comes from OpenStreetMap. Change the tile address only if you use another tile server with the same layout. Satellite imagery comes from Esri and needs your own ArcGIS key (a free account on ArcGIS Location Platform with basemap access); the app has no key of its own.
+- **Map**: the street map comes from OpenStreetMap. Change the tile address only if you use another tile server with the same layout. Satellite imagery comes from Esri and needs your own ArcGIS key (a free account on ArcGIS Location Platform with basemap access); the app has no key of its own. See [Satellite map](docs/satellite-map.md) for how to create one.
 - **Stick mode for imported logs**: logs copied from a radio use the stick mode set on it. For imported logs the app doesn't know it, so choose it here (mode 2 by default).
 - **Data folder**: "Open folder" shows where the app keeps your logs (see below).
 - **About**: the version, a link to the app's MIT license and its source code, and "Show licenses" with the licenses of all open source packages inside the app.
@@ -127,6 +127,7 @@ You do not need any of this to use the app. It is for those who want to go furth
 
 - [Browser interface](docs/browser-interface.md): the same pages as the desktop app, in your web browser
 - [Command line](docs/command-line.md): listing flights and exporting many at once from the terminal
+- [Satellite map](docs/satellite-map.md): creating your own ArcGIS key for satellite imagery
 - [Development](docs/development.md): running from source, building the app and making a release
 
 ## License

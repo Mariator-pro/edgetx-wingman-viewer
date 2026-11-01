@@ -8,6 +8,7 @@ import type { TrackView } from '../../server/api.ts';
 import { airframeMesh } from '../airframes.ts';
 import { attitudeAt } from '../track.ts';
 import { usePrefs } from '../usePrefs.ts';
+import { CubeIcon, MinusIcon } from './icons.tsx';
 
 // seen from the south and a little above, so the heading matches the map (north up)
 const VIEW = { target: [0, 0, -0.25] as [number, number, number], rotationOrbit: 0, rotationX: 22, zoom: 6.25 };
@@ -22,8 +23,21 @@ const GRID = Array.from({ length: 7 }, (_, i) => (i - 3) * 0.6).flatMap((v) => [
   { from: [-1.8, v, GROUND], to: [1.8, v, GROUND] },
 ]);
 
+type Props = { track: TrackView; time: number; airframe?: Airframe; onAirframe: (a: Airframe | null) => void };
+
+// Folds into a round button, so it leaves the map free; the app keeps the choice.
+export function Attitude(props: Props) {
+  const { t, attitudeShown, setAttitudeShown } = usePrefs();
+  if (attitudeShown) return <AttitudeCard {...props} onHide={() => setAttitudeShown(false)} />;
+  return (
+    <Button isIconOnly variant="tertiary" className="rounded-full shadow-sm" aria-label={t.showAttitude} onPress={() => setAttitudeShown(true)}>
+      <CubeIcon size={18} />
+    </Button>
+  );
+}
+
 // The model at the moment shown, with pitch, roll and yaw from the log; a menu chooses the kind of model.
-export function Attitude(props: { track: TrackView; time: number; airframe?: Airframe; onAirframe: (a: Airframe | null) => void }) {
+function AttitudeCard(props: Props & { onHide: () => void }) {
   const { t } = usePrefs();
   const box = useRef<HTMLDivElement>(null);
   const deck = useRef<Deck<OrbitView> | null>(null);
@@ -66,8 +80,8 @@ export function Attitude(props: { track: TrackView; time: number; airframe?: Air
   const names: Record<Airframe | 'arrow', string> = t.airframeNames;
   return (
     <Card className="w-60 gap-0 overflow-hidden p-0" aria-label={t.attitude}>
-      <div className="flex items-center justify-between px-3 pt-2">
-        <span className="text-xs font-semibold">{t.attitude}</span>
+      <div className="flex items-center gap-1 px-3 pt-2">
+        <span className="mr-auto text-xs font-semibold">{t.attitude}</span>
         <Dropdown>
           <Button size="sm" variant="ghost" className="h-6 min-w-0 px-2 text-xs" aria-label={t.airframe}>
             {names[kind]}
@@ -91,6 +105,9 @@ export function Attitude(props: { track: TrackView; time: number; airframe?: Air
             </Dropdown.Menu>
           </Dropdown.Popover>
         </Dropdown>
+        <Button isIconOnly size="sm" variant="ghost" className="size-6 min-w-0" aria-label={t.hideAttitude} onPress={props.onHide}>
+          <MinusIcon size={14} />
+        </Button>
       </div>
       <div ref={box} className="relative h-40" />
       <div className="whitespace-nowrap px-3 pb-2 text-[11px] tabular-nums text-muted">

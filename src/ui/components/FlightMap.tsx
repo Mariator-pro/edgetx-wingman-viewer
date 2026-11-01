@@ -22,8 +22,10 @@ const esriTiles = (key: string) =>
 const FUTURE_ALPHA = 64; // the part still to come: the same colors, pale
 const STEM: [number, number, number, number] = [90, 100, 97, 90];
 const MAX_STEMS = 400;
-// room for the controls on the map: legend at the top left, timeline at the bottom
-const FIT = { padding: { top: 150, bottom: 130, left: 60, right: 80 }, maxZoom: 18 };
+// room for the controls on the map: legend at the top left, timeline at the bottom, the attitude view at the right
+const fit = (roomRight: boolean) => ({ padding: { top: 150, bottom: 130, left: 60, right: roomRight ? 280 : 80 }, maxZoom: 18 });
+const camera = (view: View) => (view === '3d' ? { pitch: 60, bearing: -20 } : { pitch: 0, bearing: 0 });
+const motion = () => (matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 800);
 
 // The model symbol (an outlined arrow pointing north), the start (a ring) and the end (a square), drawn once,
 // so no image has to be loaded.
@@ -99,8 +101,11 @@ export function FlightMap(props: {
   label: string;
   onSatelliteError: () => void;
   onMap: (m: MapLibre | null) => void; // for the zoom buttons
+  roomRight: boolean; // the attitude view covers the lower right
+  wholeFlight: number; // counts the presses of "Show whole flight"
 }) {
   const { track, time, view, base, colors, settings, label, onSatelliteError, onMap } = props;
+  const roomRight = useRef(props.roomRight);
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibre>(null);
   const overlay = useRef<MapboxOverlay>(null);
@@ -109,6 +114,7 @@ export function FlightMap(props: {
   useEffect(() => {
     onError.current = onSatelliteError;
     onMapRef.current = onMap;
+    roomRight.current = props.roomRight;
   });
   const atlas = useMemo(() => iconAtlas(), []);
 
@@ -117,7 +123,7 @@ export function FlightMap(props: {
     const m = new MapLibre({
       container: box.current!,
       style: style(settings),
-      ...(b ? { bounds: b, fitBoundsOptions: FIT } : { center: [0, 0], zoom: 1 }),
+      ...(b ? { bounds: b, fitBoundsOptions: fit(roomRight.current) } : { center: [0, 0], zoom: 1 }),
       maxPitch: 80,
       attributionControl: false,
     });
@@ -127,7 +133,7 @@ export function FlightMap(props: {
     // the box has its final size only once the page is laid out
     m.once('load', () => {
       m.resize();
-      if (b) m.fitBounds(b, { ...FIT, duration: 0 });
+      if (b) m.fitBounds(b, { ...fit(roomRight.current), duration: 0 });
     });
     let refused = false;
     m.on('error', (e) => {
@@ -150,9 +156,15 @@ export function FlightMap(props: {
   useEffect(() => {
     const m = map.current;
     if (!m) return;
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    m.easeTo(view === '3d' ? { pitch: 60, bearing: -20, duration: reduced ? 0 : 800 } : { pitch: 0, bearing: 0, duration: reduced ? 0 : 800 });
+    m.easeTo({ ...camera(view), duration: motion() });
   }, [view, track, settings]);
+
+  // back to the whole path, seen as the chosen view shows it
+  useEffect(() => {
+    const m = map.current;
+    const b = bounds(track);
+    if (m && b && props.wholeFlight > 0) m.fitBounds(b, { ...fit(roomRight.current), ...camera(view), duration: motion() });
+  }, [props.wholeFlight]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const m = map.current;

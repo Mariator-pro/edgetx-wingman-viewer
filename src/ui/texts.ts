@@ -139,6 +139,8 @@ const en = {
   jumpTo: (what: string, at: string) => `Go to ${what} at ${at}`,
   values: 'Values',
   attitude: 'Attitude',
+  hideAttitude: 'Hide attitude',
+  showAttitude: 'Show attitude',
   airframe: 'Type of model',
   airframeNames: { copter: 'Copter', plane: 'Airplane', wing: 'Flying wing', arrow: 'Arrow' },
   attitudeValues: (pitch: number, roll: number, yaw: number) => `Pitch ${pitch}° · Roll ${roll}° · Course ${yaw}°`,

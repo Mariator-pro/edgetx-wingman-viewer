@@ -128,6 +128,17 @@ export const MinusIcon = (p: IconProps) => (
   </Svg>
 );
 
+export const FitIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+  </Svg>
+);
+export const CubeIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 3 4 7.5v9L12 21l8-4.5v-9L12 3Z" />
+    <path d="m4 7.5 8 4.5 8-4.5M12 12v9" />
+  </Svg>
+);
 export const LayersIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M12 3 3 8l9 5 9-5z" />
