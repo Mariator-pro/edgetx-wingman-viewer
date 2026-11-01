@@ -32,10 +32,23 @@ export interface LipoModel {
   chemistries: string[]; // of the model's batteries
 }
 
+// A pack of Lipo Nanny, in use or retired into its archive (which keeps only the battery's name and the statistics).
+export interface PackInfo {
+  battery: string;
+  label?: string; // its number within the battery, e.g. "2"
+  chemistry?: string;
+  cells?: number;
+  capacity?: number; // mAh
+  cycles?: number;
+  wear?: number; // %
+  lastUsed?: string; // YYYY-MM-DD
+  retired?: boolean;
+}
+
 export interface Projects {
   models: ModelInfo[];
   lipoModels: Record<string, LipoModel>; // by model file
-  packs: Record<number, { battery: string; label: string; chemistry?: string }>; // by the number of pack_NNNN
+  packs: Record<number, PackInfo>; // by the number of pack_NNNN
   rqlyThreshold?: number; // Link Sentinel
   homeMinSats?: number; // GPS Homer
   stickMode?: StickMode; // from the radio's settings
@@ -44,6 +57,13 @@ export interface Projects {
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const str = (v: unknown) => (typeof v === 'string' && printable(v) !== '' ? printable(v) : undefined);
 const int = (v: unknown, min: number, max: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, Math.round(v))) : undefined);
+const day = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : undefined);
+const packNumber = (id: unknown) => {
+  const n = /^pack_(\d+)$/.exec(typeof id === 'string' ? id : '');
+  return n ? Number(n[1]) : undefined;
+};
+// without the keys that have no value, so the views stay small
+const defined = <T extends object>(o: T): T => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as T;
 
 // EdgeTX's YAML files as the radio reads them: what can be read is taken even when the end of the file is
 // broken (left over from a longer version) or a key appears twice.
@@ -94,8 +114,27 @@ export function parseLipoConfig(text: string | undefined): Pick<Projects, 'lipoM
     if (id && chemistry) chemistryOf[id] = chemistry;
     for (const p of list(b.instances)) {
       if (!isObject(p)) continue;
-      const n = /^pack_(\d+)$/.exec(str(p.id) ?? '');
-      if (n) packs[Number(n[1])] = { battery: str(b.name) ?? id ?? '', label: String(p.label ?? n[1]), chemistry };
+      const n = packNumber(p.id);
+      if (n === undefined) continue;
+      const label = typeof p.label === 'number' || typeof p.label === 'string' ? printable(String(p.label)) : String(n);
+      packs[n] = defined({
+        battery: str(b.name) ?? id ?? '',
+        label,
+        chemistry,
+        cells: int(b.cells, 1, 24),
+        capacity: int(b.capacityMah, 1, 1e6),
+        cycles: int(p.cycles, 0, 1e6),
+        wear: int(p.wear, 0, 100),
+        lastUsed: day(p.lastUsed),
+      });
+    }
+  }
+  // retired packs: pack id -> battery name and statistics
+  if (isObject(cfg.archive)) {
+    for (const [id, p] of Object.entries(cfg.archive)) {
+      const n = packNumber(id);
+      if (n === undefined || !isObject(p) || packs[n]) continue;
+      packs[n] = defined({ battery: str(p.name) ?? '', cycles: int(p.cycles, 0, 1e6), lastUsed: day(p.lastUsed), retired: true });
     }
   }
   if (isObject(cfg.models)) {

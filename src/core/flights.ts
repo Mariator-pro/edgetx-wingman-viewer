@@ -33,6 +33,23 @@ export function linkUp(s: Sample): boolean {
 // Disarmed marker in the flight mode text: Betaflight appends * ! ?, ArduPilot *, INAV sends OK / WAIT / !ERR.
 // "!FS!" (failsafe) is armed despite its "!".
 const INAV_DISARMED = new Set(['OK', 'WAIT', '!ERR']);
+// The flight controller's firmware from a disarmed flight mode text, as GPS Homer tells it: Betaflight appends
+// "!" or "?" (only it does), INAV sends OK / WAIT / !ERR, ArduPilot appends "*" to its own mode names; names both
+// Betaflight and ArduPilot use don't tell.
+const BF_NAMES_NOT_AP = new Set(['ANGL', 'HOR', 'AIR', 'RTH', 'PASS', 'PHFL', 'CHIR']);
+const BF_NAMES_ALSO_AP = new Set(['ACRO', 'ALTH', 'POSH', 'STAB', 'MANU']);
+export function fcFromFM(fm: string | undefined): 'BF' | 'INAV' | 'AP' | undefined {
+  if (fm === undefined || fm.length < 2) return undefined;
+  if (INAV_DISARMED.has(fm)) return 'INAV';
+  const last = fm.slice(-1);
+  const name = fm.slice(0, -1);
+  if ((last === '!' || last === '?') && fm !== '!FS!') return 'BF';
+  if (last !== '*') return undefined;
+  if (BF_NAMES_NOT_AP.has(name)) return 'BF';
+  if (BF_NAMES_ALSO_AP.has(name)) return undefined;
+  return 'AP';
+}
+
 export function fmDisarmed(fm: string): boolean {
   if (fm === '!FS!') return false;
   if (INAV_DISARMED.has(fm)) return true;

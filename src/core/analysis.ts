@@ -5,7 +5,7 @@ import { flightHints, hintSetup, type Hint } from './hints.ts';
 import type { StickMode } from './kinds.ts';
 import { parseLog, type LogFile } from './logfile.ts';
 import { printable } from './paths.ts';
-import { modelForLog, modelNameOfLog, noProjects, type Projects } from './projects.ts';
+import { modelForLog, modelNameOfLog, noProjects, type PackInfo, type Projects } from './projects.ts';
 import { samples as toSamples, type RoleMap, type Sample } from './roles.ts';
 
 export interface FlightInfo extends Flight {
@@ -16,6 +16,7 @@ export interface FlightInfo extends Flight {
   maxDistance?: number; // m from home
   maxAlt?: number; // in the log's unit
   hints: Hint[];
+  pack?: { n: number } & Partial<PackInfo>; // from Lipo Nanny's sensor, with what its settings know of the pack
 }
 
 export interface AnalysedLog {
@@ -40,12 +41,12 @@ export function distance(a: { lat: number; lon: number }, b: { lat: number; lon:
   return 2 * EARTH_M * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-function describe(f: Flight, n: number, samples: Sample[], minSats: number, hints: Hint[]): FlightInfo {
+function describe(f: Flight, n: number, samples: Sample[], minSats: number, hints: Hint[], pack?: FlightInfo['pack']): FlightInfo {
   const takeoff = f.events.find((e) => e.kind === 'takeoff');
   const landings = f.events.filter((e) => e.kind === 'landing');
   const start = takeoff?.t ?? samples[f.first]!.t;
   const end = landings.length > 0 ? landings[landings.length - 1]!.t : samples[f.last]!.t;
-  const info: FlightInfo = { ...f, n, start, end, hints };
+  const info: FlightInfo = { ...f, n, start, end, hints, ...(pack ? { pack } : {}) };
   for (let i = f.first; i <= f.last; i++) {
     const s = samples[i]!;
     if (!linkUp(s) || s.t < start) continue;
@@ -60,6 +61,18 @@ function describe(f: Flight, n: number, samples: Sample[], minSats: number, hint
   return info;
 }
 
+// The pack Lipo Nanny reports most often while the link is up (0 is none).
+export function flightPack(samples: Sample[], f: Flight): number | undefined {
+  const count = new Map<number, number>();
+  for (let i = f.first; i <= f.last; i++) {
+    const v = samples[i]!.values.lnpk;
+    if (v !== undefined && v > 0 && Number.isInteger(v) && linkUp(samples[i]!)) count.set(v, (count.get(v) ?? 0) + 1);
+  }
+  let best: number | undefined;
+  for (const [v, c] of count) if (best === undefined || c > count.get(best)!) best = v;
+  return best;
+}
+
 export function analyse(text: string, file: string, board: string, projects: Projects = noProjects()): AnalysedLog {
   const model = modelForLog(file, projects);
   const lipo = model ? projects.lipoModels[model.file] : undefined;
@@ -67,9 +80,9 @@ export function analyse(text: string, file: string, board: string, projects: Pro
   const { samples, roles } = toSamples(log, lipo);
   const minSats = projects.homeMinSats ?? DEFAULT_MIN_SATS;
   const flights = splitFlights(samples, minSats).map((f, n) => {
-    const pack = samples.slice(f.first, f.last + 1).find((s) => s.values.lnpk !== undefined && s.values.lnpk > 0)?.values.lnpk;
+    const pack = flightPack(samples, f);
     const hints = flightHints(samples, roles, f, hintSetup(projects, lipo, pack));
-    return describe(f, n + 1, samples, minSats, hints);
+    return describe(f, n + 1, samples, minSats, hints, pack !== undefined ? { ...projects.packs[pack], n: pack } : undefined);
   });
   const altUnit = roles.map((r) => r.unit.alt).find((u) => u !== undefined);
   return {

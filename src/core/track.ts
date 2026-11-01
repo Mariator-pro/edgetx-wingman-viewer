@@ -1,7 +1,8 @@
 import { distance, type AnalysedLog, type FlightInfo } from './analysis.ts';
-import { FIX_LOSS_MS, linkUp, validFix } from './flights.ts';
+import { antennaRose } from './antennas.ts';
+import { fcFromFM, FIX_LOSS_MS, linkUp, validFix } from './flights.ts';
 import { printable } from './paths.ts';
-import { STICKS, TRACK_VALUES, type ExtraValue, type PathPoint, type Stick, type Track, type TrackValue } from './kinds.ts';
+import { STAGES, STICKS, TRACK_VALUES, type Attitude, type ExtraValue, type PathPoint, type Stick, type Track, type TrackValue } from './kinds.ts';
 import type { Sample } from './roles.ts';
 
 export { STICKS, TRACK_VALUES, type PathPoint, type Track, type TrackValue } from './kinds.ts';
@@ -219,6 +220,13 @@ export function flightTrack(a: AnalysedLog, f: FlightInfo): Track {
     if (u !== undefined) units[r] = u;
   }
   const { sticks, extra } = otherColumns(a, lines, names);
+  const stages: Track['stages'] = {};
+  for (const r of STAGES) {
+    if (!lines.some((s) => s.values[r] !== undefined)) continue;
+    stages[r] = lines.map((s) => (linkUp(s) ? (s.values[r] ?? null) : null));
+  }
+  const antennas = antennaRose(a, f);
+  const attitude = attitudeOf(a, lines);
   const lastSeg = path[path.length - 1];
   const lastPt = lastSeg?.[lastSeg.length - 1];
   return {
@@ -229,10 +237,33 @@ export function flightTrack(a: AnalysedLog, f: FlightInfo): Track {
     ...(sticks ? { sticks } : {}),
     ...(sticks && a.stickMode ? { stickMode: a.stickMode } : {}),
     ...(extra.length > 0 ? { extra } : {}),
+    ...(Object.keys(stages).length > 0 ? { stages } : {}),
+    ...(antennas ? { antennas } : {}),
+    ...(attitude ? { attitude } : {}),
     path,
     ...(f.home ? { home: [f.home.lon, f.home.lat] as [number, number] } : path[0] ? { home: [path[0][0]![1], path[0][0]![2]] as [number, number] } : {}),
     ...(lastPt ? { end: [lastPt[1], lastPt[2]] as [number, number] } : {}),
   };
+}
+
+// Pitch, roll and yaw in degrees (the log has rad or degrees, by the unit in the column name).
+function attitudeOf(a: AnalysedLog, lines: Sample[]): Attitude | undefined {
+  const deg = (role: 'pitch' | 'roll' | 'yaw' | 'hdg') => {
+    const u = a.roles.map((r) => r.unit[role]).find((x) => x !== undefined);
+    const k = u === 'rad' ? 180 / Math.PI : 1;
+    return lines.map((s) => {
+      const v = s.values[role];
+      return linkUp(s) && v !== undefined ? Math.round(v * k * 10) / 10 : null;
+    });
+  };
+  // Betaflight and INAV send pitch with the nose down positive, ArduPilot with the nose up (as GPS Homer handles
+  // it): flipped unless the flight mode text tells ArduPilot; unknown counts as Betaflight
+  const fc = a.samples.map((s) => fcFromFM(s.fm)).find((f) => f !== undefined);
+  const pitch = deg('pitch').map((v) => (v === null || fc === 'AP' ? v : -v));
+  const roll = deg('roll');
+  if (!pitch.some((v) => v !== null) || !roll.some((v) => v !== null)) return undefined;
+  const yaw = [deg('yaw'), deg('hdg')].find((c) => c.some((v) => v !== null));
+  return { pitch, roll, ...(yaw ? { yaw: yaw.map((v) => (v === null ? null : wrap(v))) } : {}) };
 }
 
 const num = (s: string | undefined) => {

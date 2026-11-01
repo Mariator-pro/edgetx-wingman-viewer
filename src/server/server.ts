@@ -6,7 +6,7 @@ import { extname, join, normalize, sep } from 'node:path';
 import { AppError, errorInfo, type ErrorArgs, type ErrorCode } from '../core/errors.ts';
 import { exportFlight, exportName, FORMATS, type ExportFormat } from '../core/export.ts';
 import { cleanTags, Library, MAX_IMPORT, MAX_NOTE, type ListedFlight } from '../core/library.ts';
-import { isStickMode } from '../core/kinds.ts';
+import { isAirframe, isStickMode } from '../core/kinds.ts';
 import type { Paths } from '../core/paths.ts';
 import { radioName } from '../core/radios.ts';
 import { DEFAULT_TILES, ESRI_ORIGIN, loadSettings, saveSettings, tilesOrigin, validKey, validTiles, type MapSettings, type Settings } from '../core/settings.ts';
@@ -192,6 +192,7 @@ export function flightView(f: ListedFlight): FlightView {
     ...(flight.maxAlt !== undefined ? { maxAlt: flight.maxAlt } : {}),
     ...(log.altUnit ? { altUnit: log.altUnit } : {}),
     hints: flight.hints.length,
+    ...(flight.pack ? { pack: flight.pack } : {}),
     ...(f.marks.note ? { note: f.marks.note } : {}),
     tags: f.marks.tags ?? [],
     ...(f.marks.deleted ? { deleted: f.marks.deleted } : {}),
@@ -315,6 +316,7 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
     'GET /api/flight/track': async (_req, q) => {
       const f = await library.find(q.get('key') ?? '');
       const track = flightTrack(f.log, f.flight);
+      const airframe = await library.airframe(f);
       const t0 = f.log.samples[f.flight.first]!.t;
       const rel = (t: number) => (t - t0) / 1000;
       const view: TrackView = {
@@ -326,6 +328,7 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
         events: f.flight.events.map((e) => ({ t: rel(e.t), kind: e.kind })),
         hints: f.flight.hints.map((h) => ({ t: rel(h.t), kind: h.kind })),
         ...track,
+        ...(airframe ? { airframe } : {}),
       };
       return view;
     },
@@ -341,6 +344,11 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
       }
       s.map = { ...(tiles !== DEFAULT_TILES ? { tiles } : {}), ...(arcgisKey ? { arcgisKey } : {}) };
       await saveSettings(p.settings, s);
+    },
+    'POST /api/flight/airframe': async (req) => {
+      const { key, airframe } = await body<{ key: unknown; airframe: unknown }>(req);
+      if (typeof key !== 'string' || (airframe !== null && !isAirframe(airframe))) throw new HttpError(400, 'invalidRequest', { what: 'airframe' });
+      await library.setAirframe(key, airframe);
     },
     'POST /api/flight/note': async (req) => {
       const { key, note } = await body<{ key: string; note: string }>(req);

@@ -1,6 +1,6 @@
 // Shapes the server sends to the browser interface, shared by both sides; imports only Node-free code,
 // so the interface's type check doesn't pull in Node code.
-import type { EventKind, HintKind, StickMode, Track } from '../core/kinds.ts';
+import type { Airframe, EventKind, HintKind, StickMode, Track } from '../core/kinds.ts';
 
 export interface RadioView {
   volume: string;
@@ -33,6 +33,20 @@ export interface ProgressEvent {
   total?: number;
 }
 
+// The pack of a flight: its number from Lipo Nanny's sensor, the rest from Lipo Nanny's settings when they know it.
+export interface PackView {
+  n: number;
+  battery?: string;
+  label?: string; // number within the battery
+  chemistry?: string;
+  cells?: number;
+  capacity?: number; // mAh
+  cycles?: number;
+  wear?: number; // %
+  lastUsed?: string; // YYYY-MM-DD
+  retired?: boolean;
+}
+
 // One flight in the list. Times are the radio's local time as "2026-10-30T17:45:44".
 export interface FlightView {
   key: string;
@@ -47,6 +61,7 @@ export interface FlightView {
   maxAlt?: number; // in altUnit
   altUnit?: string;
   hints: number;
+  pack?: PackView;
   note?: string;
   tags: string[];
   deleted?: string; // ISO, when it was deleted
@@ -70,6 +85,7 @@ export interface TrackView extends Track {
   landing: number;
   events: { t: number; kind: EventKind }[];
   hints: { t: number; kind: HintKind }[];
+  airframe?: Airframe; // kind of model for the attitude view, chosen per model and radio
 }
 
 // Where the map gets its tiles from; the street map's address can be changed, satellite needs the user's own key.

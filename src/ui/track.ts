@@ -2,8 +2,10 @@ import type { PathPoint } from '../core/kinds.ts';
 import type { TrackView } from '../server/api.ts';
 
 export type Rgb = [number, number, number];
-export type ColorBy = 'fm' | 'alt' | 'gspd' | 'lq' | 'volt';
-export const COLOR_BY: ColorBy[] = ['fm', 'alt', 'gspd', 'lq', 'volt'];
+export type ColorBy = 'fm' | 'alt' | 'gspd' | 'lq' | 'volt' | 'lnst' | 'lsst' | 'stage';
+export const COLOR_BY: ColorBy[] = ['fm', 'alt', 'gspd', 'lq', 'volt', 'lnst', 'lsst', 'stage'];
+const BY_LEVEL: ColorBy[] = ['lnst', 'lsst', 'stage'];
+export const byLevel = (by: ColorBy) => BY_LEVEL.includes(by);
 
 // The last index whose time is at or before t (0 before the first).
 function indexAt(times: (i: number) => number, n: number, t: number): number {
@@ -82,6 +84,21 @@ export interface Coloring {
   // legend: a color scale with lowest, middle and highest value, or one color per flight mode
   scale?: { css: string; ticks: [number, number, number] };
   modes?: { color: Rgb; label: string }[];
+  levels?: Rgb[]; // OK, warning, critical
+}
+
+// The warning level of the cores per log line: Lipo Nanny's or Link Sentinel's, or the worst of all, where
+// any reason of GPS Homer counts as a warning.
+export function levelsOf(tr: TrackView, by: ColorBy): (number | null)[] | undefined {
+  const st = tr.stages;
+  if (!st) return undefined;
+  if (by === 'lnst' || by === 'lsst') return st[by];
+  const cols = [st.lnst, st.lsst, st.ghst?.map((v) => (v === null ? null : v > 0 ? 1 : 0))].filter((c) => c !== undefined);
+  if (cols.length === 0) return undefined;
+  return tr.rows.t.map((_, r) => {
+    const vs = cols.map((c) => c[r]).filter((v): v is number => v !== null && v !== undefined);
+    return vs.length > 0 ? Math.max(...vs) : null;
+  });
 }
 
 // A line without a value (no telemetry) takes the color of the one before.
@@ -98,7 +115,14 @@ export function coloring(tr: TrackView, by: ColorBy): Coloring {
     const colors = filled(fm.map((m) => (m === null ? undefined : MODES[m % MODES.length]!)), PLAIN);
     return { row: (r) => colors[r]!, modes: tr.modes.flatMap((m, i) => (fm.includes(i) ? [{ color: MODES[i % MODES.length]!, label: m }] : [])) };
   }
-  const values = tr.rows.values[by];
+  if (byLevel(by)) {
+    const levels = levelsOf(tr, by);
+    const stops = [...GOOD].reverse();
+    if (!levels) return { row: () => PLAIN };
+    const colors = filled(levels.map((v) => (v === null ? undefined : stops[Math.min(2, Math.max(0, Math.round(v)))]!)), stops[0]!);
+    return { row: (r) => colors[r]!, levels: stops };
+  }
+  const values = tr.rows.values[by as Exclude<ColorBy, 'fm' | 'lnst' | 'lsst' | 'stage'>];
   const nums = values?.filter((v): v is number => v !== null) ?? [];
   if (!values || nums.length === 0) return { row: () => PLAIN };
   const min = Math.min(...nums);
@@ -112,4 +136,28 @@ export function coloring(tr: TrackView, by: ColorBy): Coloring {
 }
 
 // The values the path can be colored by in this flight.
-export const colorChoices = (tr: TrackView) => COLOR_BY.filter((c) => (c === 'fm' ? tr.modes.length > 0 : tr.rows.values[c]?.some((v) => v !== null)));
+export const colorChoices = (tr: TrackView) =>
+  COLOR_BY.filter((c) => {
+    if (c === 'fm') return tr.modes.length > 0;
+    if (byLevel(c)) return levelsOf(tr, c)?.some((v) => v !== null) ?? false;
+    return tr.rows.values[c as Exclude<ColorBy, 'fm' | 'lnst' | 'lsst' | 'stage'>]?.some((v) => v !== null);
+  });
+
+// The attitude at time t, between two log lines, so the model turns smoothly; none without telemetry there.
+export function attitudeAt(tr: TrackView, t: number): { pitch: number; roll: number; yaw: number } | undefined {
+  const at = tr.attitude;
+  if (!at) return undefined;
+  const r = rowAt(tr, t);
+  const p0 = at.pitch[r];
+  const r0 = at.roll[r];
+  if (p0 == null || r0 == null) return undefined;
+  const n = r + 1 < tr.rows.t.length ? r + 1 : r;
+  const f = n === r ? 0 : Math.min(1, Math.max(0, (t - tr.rows.t[r]!) / (tr.rows.t[n]! - tr.rows.t[r]! || 1)));
+  const next = (col: (number | null)[], v: number) => col[n] ?? v;
+  const y0 = at.yaw?.[r] ?? 0;
+  return {
+    pitch: lerp(p0, next(at.pitch, p0), f),
+    roll: lerp(r0, next(at.roll, r0), f),
+    yaw: (lerpAngle(y0, at.yaw ? next(at.yaw, y0) : y0, f) + 360) % 360,
+  };
+}

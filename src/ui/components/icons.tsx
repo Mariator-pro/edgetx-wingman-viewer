@@ -149,3 +149,10 @@ export const SlidersIcon = (p: IconProps) => (
     <circle cx="10" cy="17" r="2" />
   </Svg>
 );
+
+export const BatteryIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="7" width="16" height="10" rx="2" />
+    <path d="M21 11v2" />
+  </Svg>
+);

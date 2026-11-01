@@ -2,6 +2,7 @@ import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/p
 import { basename, dirname, join } from 'node:path';
 import { analyse, type AnalysedLog, type FlightInfo } from './analysis.ts';
 import { AppError } from './errors.ts';
+import { isAirframe, type Airframe } from './kinds.ts';
 import { IMPORTED, isSafeName, printable, type Paths } from './paths.ts';
 import { noProjects, readProjects, type Projects } from './projects.ts';
 import { readJson, writeJson } from './settings.ts';
@@ -40,9 +41,18 @@ export function cleanTags(tags: unknown): string[] | undefined {
   return out;
 }
 
-// The marks file: flight key -> marks. Keys are plain data, kept in an object without prototype.
-async function loadMarks(file: string): Promise<Map<string, Marks>> {
+// The kind of model the attitude view shows, per radio and model name.
+const airframeKey = (board: string, model: string) => `${board}/${model}`;
+
+// The marks file: flight key -> marks, and the kinds of model. Keys are plain data, kept in maps.
+async function loadMarks(file: string): Promise<{ marks: Map<string, Marks>; airframes: Map<string, Airframe> }> {
   const v = await readJson(file);
+  const airframes = new Map<string, Airframe>();
+  if (isObject(v) && isObject(v.airframes)) for (const [k, a] of Object.entries(v.airframes)) if (isAirframe(a)) airframes.set(k, a);
+  return { marks: flightMarks(v), airframes };
+}
+
+function flightMarks(v: unknown): Map<string, Marks> {
   const out = new Map<string, Marks>();
   if (!isObject(v) || !isObject(v.flights)) return out;
   for (const [key, m] of Object.entries(v.flights)) {
@@ -63,6 +73,7 @@ export class Library {
   private p: Paths;
   private sampleDir?: string;
   private marks?: Map<string, Marks>;
+  private airframes = new Map<string, Airframe>();
   private cache = new Map<string, { mtimeMs: number; size: number; log: AnalysedLog }>();
   private projects = new Map<string, Projects>();
 
@@ -78,7 +89,11 @@ export class Library {
   }
 
   private async allMarks(): Promise<Map<string, Marks>> {
-    this.marks ??= await loadMarks(this.p.flights);
+    if (!this.marks) {
+      const loaded = await loadMarks(this.p.flights);
+      this.marks = loaded.marks;
+      this.airframes = loaded.airframes;
+    }
     return this.marks;
   }
 
@@ -86,7 +101,9 @@ export class Library {
     const marks = await this.allMarks();
     const flights: Record<string, Marks> = Object.create(null);
     for (const [k, m] of marks) if (Object.keys(m).length > 0) flights[k] = m;
-    await writeJson(this.p.flights, { flights });
+    const airframes: Record<string, Airframe> = Object.create(null);
+    for (const [k, a] of this.airframes) airframes[k] = a;
+    await writeJson(this.p.flights, { flights, airframes });
   }
 
   async isDeleted(): Promise<(key: string) => boolean> {
@@ -171,6 +188,21 @@ export class Library {
     const m = marks.get(key) ?? {};
     fn(m);
     marks.set(key, m);
+  }
+
+  // The kind of model chosen for a flight's model on its radio; the sample flight is a copter unless chosen.
+  async airframe(f: ListedFlight): Promise<Airframe | undefined> {
+    await this.allMarks();
+    return this.airframes.get(airframeKey(f.log.board, f.log.model)) ?? (f.key === SAMPLE_KEY ? 'copter' : undefined);
+  }
+
+  async setAirframe(key: string, airframe: Airframe | null): Promise<void> {
+    const f = await this.find(key);
+    await this.allMarks();
+    const k = airframeKey(f.log.board, f.log.model);
+    if (airframe) this.airframes.set(k, airframe);
+    else this.airframes.delete(k);
+    await this.saveMarks();
   }
 
   async setNote(key: string, note: string): Promise<void> {

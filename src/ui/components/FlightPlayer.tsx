@@ -1,13 +1,15 @@
 import { Alert, Button, ButtonGroup, Card, Chip, Dropdown, ListBox, Select, Slider, Tabs, ToggleButton, ToggleButtonGroup } from '@heroui/react';
 import type { Map as MapLibre } from 'maplibre-gl';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { EventKind, TrackValue } from '../../core/kinds.ts';
+import type { Airframe, EventKind, TrackValue } from '../../core/kinds.ts';
 import type { MapSettingsView, TrackView } from '../../server/api.ts';
-import { get } from '../api.ts';
+import { get, post } from '../api.ts';
 import { clockText, distance, duration } from '../format.ts';
 import { formatValue, PAIRS, PRESET, seriesOf } from '../series.ts';
-import { colorChoices, coloring, rgbCss, rowAt, type ColorBy } from '../track.ts';
+import { byLevel, colorChoices, coloring, rgbCss, rowAt, type ColorBy } from '../track.ts';
 import { usePrefs } from '../usePrefs.ts';
+import { AntennaRose } from './AntennaRose.tsx';
+import { Attitude } from './Attitude.tsx';
 import { Charts, ChartTools, type Marks, type Range } from './Charts.tsx';
 import { FlightMap, type Base, type View } from './FlightMap.tsx';
 import { Scatter } from './Scatter.tsx';
@@ -25,6 +27,7 @@ const NOTICE: EventKind[] = ['rth', 'land', 'gps-lost'];
 const SHOWN: (TrackValue | 'fm')[] = ['alt', 'gspd', 'vspd', 'volt', 'curr', 'capa', 'fuel', 'lq', 'rssi1', 'rssi2', 'sats', 'hdg', 'fm', 'dist'];
 const UNIT_SHOWN: Record<string, string> = { kmh: 'km/h', mps: 'm/s', fps: 'ft/s' };
 const DIGITS: Partial<Record<TrackValue, number>> = { volt: 2, curr: 1, vspd: 1, gspd: 1 };
+const HINT_ZOOM_S = 30; // a hint picked in the list: the charts show this much before and after it
 
 // Seconds as "+1:23" from takeoff
 const fromTakeoff = (s: number, takeoff: number) => `${s < takeoff ? '−' : '+'}${duration(Math.abs(s - takeoff) * 1000)}`;
@@ -59,6 +62,7 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
   const [base, setBase] = useState<Base>('street');
   const [colorBy, setColorBy] = useState<ColorBy>('fm');
   const [satError, setSatError] = useState(false);
+  const [airframe, setAirframe] = useState<Airframe>();
   const clockRef = useRef({ time: 0, last: 0 });
   const mapRef = useRef<MapLibre | null>(null);
   const track = loaded?.key === flightKey ? loaded : undefined;
@@ -70,6 +74,7 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
         if (gone) return;
         setPlaying(false);
         setTrack(tr);
+        setAirframe(tr.airframe);
         setTime(tr.duration);
         setHover(undefined);
         setRange(undefined);
@@ -165,7 +170,7 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
   const choices = colorChoices(track);
   const pct = (s: number) => `${(s / (track.duration || 1)) * 100}%`;
   const markColor = (k: EventKind) => (BAD.includes(k) ? 'bg-danger' : GOOD.includes(k) ? 'bg-success' : NOTICE.includes(k) ? 'bg-warning' : 'bg-foreground');
-  const legendTitle = colorBy === 'fm' ? t.colorNames.fm : `${t.colorNames[colorBy]}${unit(colorBy) ? ` (${unit(colorBy)})` : ''}`;
+  const legendTitle = colorBy === 'fm' || byLevel(colorBy) ? t.colorNames[colorBy] : `${t.colorNames[colorBy]}${unit(colorBy as TrackValue) ? ` (${unit(colorBy as TrackValue)})` : ''}`;
   const tick = (v: number) => v.toLocaleString(t.locale, { maximumFractionDigits: DIGITS[colorBy as TrackValue] ?? 0 });
 
   return (
@@ -245,6 +250,16 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
                         </div>
                       </div>
                     )}
+                    {colors.levels && (
+                      <ul className="m-0 flex list-none flex-wrap gap-x-3 gap-y-1 p-0">
+                        {colors.levels.map((c, i) => (
+                          <li key={i} className="flex items-center gap-1.5">
+                            <i className="inline-block h-1 w-4 rounded" style={{ background: rgbCss(c) }} />
+                            {t.stageNames[i]}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     {colors.modes && (
                       <ul className="m-0 flex list-none flex-wrap gap-x-3 gap-y-1 p-0">
                         {colors.modes.map((l) => (
@@ -302,6 +317,19 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
                   </Dropdown>
                 </ButtonGroup>
               </>
+            )}
+            {track.attitude && (
+              <div className="absolute bottom-[124px] right-4 z-10">
+                <Attitude
+                  track={track}
+                  time={shownTime}
+                  airframe={airframe}
+                  onAirframe={(a) => {
+                    setAirframe(a ?? undefined);
+                    post('/api/flight/airframe', { key: flightKey, airframe: a }).catch(() => {});
+                  }}
+                />
+              </div>
             )}
             {/* z-10: above the canvas of the flight path, which the map lays over its own */}
             <Card className="absolute inset-x-4 bottom-8 z-10 flex-row items-center gap-4 px-4 py-3">
@@ -473,9 +501,19 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
             <Scatter track={track} series={series} pair={pair} onPair={setPair} time={time} range={range ?? [0, track.duration]} />
           </Tabs.Panel>
           <Tabs.Panel id="analysis" className="pt-3">
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className={`grid gap-6 md:grid-cols-2 ${track.antennas ? 'xl:grid-cols-3' : ''}`}>
               <EventList title={t.events} empty={t.noEvents} items={track.events.map((e) => ({ t: e.t, text: t.eventNames[e.kind] }))} takeoff={track.takeoff} onPick={seek} />
-              <EventList title={t.hints} empty={t.noHints} items={track.hints.map((h) => ({ t: h.t, text: t.hintNames[h.kind] }))} takeoff={track.takeoff} onPick={seek} />
+              <EventList
+                title={t.hints}
+                empty={t.noHints}
+                items={track.hints.map((h) => ({ t: h.t, text: t.hintNames[h.kind] }))}
+                takeoff={track.takeoff}
+                onPick={(s) => {
+                  seek(s);
+                  setRange([Math.max(0, s - HINT_ZOOM_S), Math.min(track.duration, s + HINT_ZOOM_S)]);
+                }}
+              />
+              {track.antennas && <AntennaRose rose={track.antennas} />}
             </div>
           </Tabs.Panel>
         </Tabs>

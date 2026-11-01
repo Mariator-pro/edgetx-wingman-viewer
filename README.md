@@ -9,11 +9,12 @@ Desktop app for macOS, Windows and Linux, in English and German (English by defa
 ## What it does
 
 - **Copies your logs** as soon as the radio is connected, and keeps them on the computer. Flights stay in the app after you delete the logs on the SD card, and you can look at them without the radio.
-- **Lists every flight** with model, radio, date, duration, maximum distance and altitude, grouped by day. A log with several flights (for example one log per day) shows each flight on its own.
-- **Shows the flight path on a map**, in 2D or in 3D at its altitude, colored by flight mode, altitude, speed, link quality or battery.
-- **Plays the flight back** with a model symbol on the map, the values of every sensor in the log and both sticks at that moment.
+- **Lists every flight** with model, radio, date, duration, maximum distance and altitude and the battery pack, grouped by day. A log with several flights (for example one log per day) shows each flight on its own.
+- **Shows the flight path on a map**, in 2D or in 3D at its altitude, colored by flight mode, altitude, speed, link quality, battery or the warning levels of your Lua projects on the radio.
+- **Plays the flight back** with a model symbol on the map, the values of every sensor in the log and both sticks at that moment, and a small 3D model of a copter, airplane or flying wing that pitches, rolls and turns as logged.
 - **Draws charts** of any values along the flight, with zoom and two cursors to measure the change between two moments, and plots two values against each other (for example throttle against current).
 - **Marks events and hints**: takeoff, landing, link lost, failsafe, return to home and GPS lost, and hints such as a weak link or a low battery.
+- **Compares both antennas** of a receiver with two antennas by direction, and says where one of them is weaker.
 - **Exports flights** as GPX or KML (with a time track for map programs) or as CSV with only the lines of that flight.
 
 It is careful with your data:
@@ -28,7 +29,7 @@ EdgeTX writes logs only with the special function "SD Logs" on the model. [Fligh
 
 The map needs a GPS sensor in the telemetry. Without one, the app still shows the flight with its timeline, values and charts.
 
-Hints for a weak link and a low battery use the same limits as [Link Sentinel](https://github.com/Mariator-pro/elrs-link-sentinel) and [Lipo Nanny](https://github.com/Mariator-pro/edgetx-lipo-nanny) on the radio, and their settings from the SD card where you use them.
+Where you use [Lipo Nanny](https://github.com/Mariator-pro/edgetx-lipo-nanny), [Link Sentinel](https://github.com/Mariator-pro/elrs-link-sentinel) or [GPS Homer](https://github.com/Mariator-pro/edgetx-gps-homer), their warnings are logged as sensors (`LNst`, `LNpk`, `LSst`, `GHst`), and the app shows the same hints as the radio, colors the path by their warning levels and shows the pack of each flight with its details from Lipo Nanny's settings. EdgeTX adds these sensors only while "Discover new sensors" runs in the model's telemetry; Flight Bag tells you when one is missing. Logs without them get hints for a weak link and a low battery with the same limits as Link Sentinel and Lipo Nanny, and their settings from the SD card where you use them.
 
 ## Install
 
@@ -67,7 +68,7 @@ Logs from other sources (a backup, a friend's radio) can be added with "Import l
 
 ### 2. Flights
 
-The Flights page lists every flight, newest first, grouped by day. Search for a model, tag or note, or filter by model and tag. Click a flight to open it in the Viewer.
+The Flights page lists every flight, newest first, grouped by day. Search for a model, tag, note or battery, or filter by model, pack and tag. Click a flight to open it in the Viewer.
 
 - **Delete**: the menu at the end of a row deletes one flight. Select several with the checkboxes (or a whole day) to delete them together. Only that flight goes, other flights from the same log stay.
 - **Recently deleted**: the switch next to the search shows deleted flights. "Restore" brings one back; "Delete now" removes it right away instead of after 30 days.
@@ -75,11 +76,13 @@ The Flights page lists every flight, newest first, grouped by day. Search for a 
 
 ### 3. Viewer
 
-The Viewer shows the chosen flight. At the top are the model, date, radio, duration, maximum distance and altitude, with buttons for the previous and next flight. Add tags with "+ Tag" and a note with "Note"; both show up in the list and work with its search and filter.
+The Viewer shows the chosen flight. At the top are the model, date, radio, duration, maximum distance and altitude and the pack (click it for its cycles, wear and last use as Lipo Nanny keeps them now), with buttons for the previous and next flight. Add tags with "+ Tag" and a note with "Note"; both show up in the list and work with its search and filter.
 
-**Map**: "2D" and "3D" switch the view; in 3D the path hangs at its altitude above the start point, with lines down to the ground. "Color by" colors the path by flight mode, altitude, speed, link quality or battery, with the legend below. The start is marked with a ring, the end with a square. Zoom and the map type (street map or satellite) are at the top right.
+**Map**: "2D" and "3D" switch the view; in 3D the path hangs at its altitude above the start point, with lines down to the ground. "Color by" colors the path by flight mode, altitude, speed, link quality or battery, or green, yellow and red like on the radio by the warning level of Lipo Nanny, Link Sentinel or the worst of all ("All warnings"), with the legend below. The start is marked with a ring, the end with a square. Zoom and the map type (street map or satellite) are at the top right.
 
 **Timeline**: at the bottom of the map. Play starts the flight from the moment shown, at 1× to 30× speed (the space bar starts and stops too). The part already flown is bright, the rest pale. Marks above the slider show events (red for link lost and failsafe), orange diamonds show hints; click one to jump there.
+
+**Attitude**: at the bottom right of the map, when the log has pitch and roll (`Ptch`, `Roll`). A small 3D model shows the attitude at the moment shown, seen from the south, so it turns like the arrow on the map. Choose "Copter", "Airplane" or "Flying wing" in its menu; the app keeps the choice for that model on that radio. Until then it shows an arrow.
 
 **Values**: next to the map, every sensor in the log at the moment shown, with the names EdgeTX uses (hover over one for its meaning). Below are both sticks, arranged by the stick mode set on your radio.
 
@@ -87,7 +90,7 @@ The Viewer shows the chosen flight. At the top are the model, date, radio, durat
 
 **Value vs value**: one value against another, one dot per log line in the air, with a trend line. Three pairs are ready to pick (throttle vs current, distance vs link quality, throttle vs climb rate), or choose any two values.
 
-**Analysis**: the events and hints of the flight as lists; click one to jump there.
+**Analysis**: the events and hints of the flight as lists; click one to jump there (a hint also zooms the charts to 30 s before and after it). For a receiver with two antennas (`1RSS` and `2RSS` in the log), "Antennas" shows how much weaker one antenna is depending on where the radio is as seen from the model (front, right, back, left, from the heading in the log), and says what to check. Logs without a heading use the direction from the start instead.
 
 ### 4. Export
 

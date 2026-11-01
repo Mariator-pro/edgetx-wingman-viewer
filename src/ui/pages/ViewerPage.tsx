@@ -1,8 +1,8 @@
 import { Alert, Button, Chip, CloseButton, Dropdown, Input, Popover, Spinner, TextArea, TextField } from '@heroui/react';
 import { lazy, Suspense, useEffect, useState } from 'react';
-import type { ExportFormat, FlightDetailView } from '../../server/api.ts';
+import type { ExportFormat, FlightDetailView, PackView } from '../../server/api.ts';
 import { get, post, tokenUrl } from '../api.ts';
-import { ChevronLeftIcon, ChevronRightIcon, DownloadIcon, MoreIcon, NoteIcon, PlusIcon } from '../components/icons.tsx';
+import { BatteryIcon, ChevronLeftIcon, ChevronRightIcon, DownloadIcon, MoreIcon, NoteIcon, PlusIcon } from '../components/icons.tsx';
 import { altitude, day, distance, duration, radioLabel, time } from '../format.ts';
 import { usePrefs } from '../usePrefs.ts';
 
@@ -101,6 +101,7 @@ export function ViewerPage(props: {
                 {x}
               </Chip>
             ))}
+            {f.pack && <PackChip pack={f.pack} />}
             {f.tags.map((x) => (
               <Chip key={x} size="sm" variant="soft" color="accent" className="pr-1">
                 {x}
@@ -247,5 +248,42 @@ export function ViewerPage(props: {
 
       {f.skipped > 0 && <p className="m-0 text-sm text-muted">{t.skipped(f.skipped)}</p>}
     </div>
+  );
+}
+
+// The flight's pack; its details as Lipo Nanny keeps them now, not as they were at the flight.
+function PackChip({ pack }: { pack: PackView }) {
+  const { t } = usePrefs();
+  const name = t.packName(pack);
+  const rows: [string, string][] = [];
+  if (pack.capacity !== undefined) rows.push([t.packCapacity, `${pack.cells ? `${pack.cells}S ` : ''}${pack.capacity.toLocaleString(t.locale)} mAh`]);
+  if (pack.cycles !== undefined) rows.push([t.packCycles, pack.cycles.toLocaleString(t.locale)]);
+  if (pack.wear !== undefined) rows.push([t.packWear, `${pack.wear} %`]);
+  if (pack.lastUsed) rows.push([t.packLastUsed, new Date(`${pack.lastUsed}T12:00:00`).toLocaleDateString(t.locale, { dateStyle: 'medium' })]);
+  return (
+    <Popover>
+      <Button size="sm" variant="secondary" className="h-7 gap-1.5 px-2.5 text-xs font-normal" aria-label={`${t.packDetails}: ${name}`}>
+        <BatteryIcon size={14} />
+        {name}
+        {pack.cycles !== undefined && <span className="text-muted">· {t.cycles(pack.cycles)}</span>}
+      </Button>
+      <Popover.Content placement="bottom start">
+        <Popover.Dialog aria-label={t.packDetails} className="flex w-64 flex-col gap-2">
+          <p className="m-0 font-semibold">{name}</p>
+          {rows.length > 0 && (
+            <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+              {rows.map(([k, v]) => (
+                <div key={k} className="contents">
+                  <dt className="text-muted">{k}</dt>
+                  <dd className="m-0 tabular-nums">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {pack.retired && <p className="m-0 text-sm text-muted">{t.packRetired}</p>}
+          <p className="m-0 text-xs text-muted">{pack.battery ? t.packNow : t.packUnknown}</p>
+        </Popover.Dialog>
+      </Popover.Content>
+    </Popover>
   );
 }

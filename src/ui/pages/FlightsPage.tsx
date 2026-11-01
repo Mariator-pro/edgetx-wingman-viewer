@@ -11,12 +11,14 @@ type Run = (fn: () => Promise<unknown>) => void;
 const DELETED_DAYS = 30;
 const DAY_MS = 24 * 3600 * 1000;
 
+// packs are numbered per radio's Lipo Nanny settings
+const packKey = (f: FlightView) => (f.pack ? `${f.board}:${f.pack.n}` : '');
 const dayOf = (f: FlightView) => (f.hasDate ? f.start.slice(0, 10) : f.file);
 
 function matches(f: FlightView, q: string): boolean {
   if (!q) return true;
   const s = q.toLowerCase();
-  return [f.model, f.note ?? '', ...f.tags].some((x) => x.toLowerCase().includes(s));
+  return [f.model, f.note ?? '', ...f.tags, f.pack?.battery ?? ''].some((x) => x.toLowerCase().includes(s));
 }
 
 export function FlightsPage(props: {
@@ -31,6 +33,7 @@ export function FlightsPage(props: {
   const [query, setQuery] = useState('');
   const [model, setModel] = useState('');
   const [tag, setTag] = useState('');
+  const [pack, setPack] = useState('');
   const [showDeleted, setShowDeleted] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [purging, setPurging] = useState<string[]>();
@@ -40,7 +43,12 @@ export function FlightsPage(props: {
   const current = all.filter((f) => !!f.deleted === showDeleted);
   const models = [...new Set(all.filter((f) => !f.deleted).map((f) => f.model))].sort((a, b) => a.localeCompare(b));
   const tags = [...new Set(all.filter((f) => !f.deleted).flatMap((f) => f.tags))].sort((a, b) => a.localeCompare(b));
-  const shown = current.filter((f) => matches(f, query) && (!model || f.model === model) && (!tag || f.tags.includes(tag))).reverse();
+  const packs = [...new Map(all.filter((f) => !f.deleted && f.pack).map((f) => [packKey(f), t.packName(f.pack!)])).entries()]
+    .map(([id, label]) => ({ id, label }))
+    .sort((a, b) => a.label.localeCompare(b.label, t.locale, { numeric: true }));
+  const shown = current
+    .filter((f) => matches(f, query) && (!model || f.model === model) && (!tag || f.tags.includes(tag)) && (!pack || packKey(f) === pack))
+    .reverse();
   const groups = new Map<string, FlightView[]>();
   for (const f of shown) groups.set(dayOf(f), [...(groups.get(dayOf(f)) ?? []), f]);
   const selected = shown.filter((f) => picked.has(f.key)).map((f) => f.key);
@@ -113,8 +121,9 @@ export function FlightsPage(props: {
             <SearchField.ClearButton />
           </SearchField.Group>
         </SearchField>
-        <FilterSelect label={t.modelFilter} all={t.allModels} value={model} options={models} onChange={setModel} />
-        {tags.length > 0 && <FilterSelect label={t.tagFilter} all={t.allTags} value={tag} options={tags} onChange={setTag} />}
+        <FilterSelect label={t.modelFilter} all={t.allModels} value={model} options={models.map((m) => ({ id: m, label: m }))} onChange={setModel} />
+        {packs.length > 0 && <FilterSelect label={t.packFilter} all={t.allPacks} value={pack} options={packs} onChange={setPack} />}
+        {tags.length > 0 && <FilterSelect label={t.tagFilter} all={t.allTags} value={tag} options={tags.map((x) => ({ id: x, label: x }))} onChange={setTag} />}
         <Switch
           isSelected={showDeleted}
           onChange={(on) => {
@@ -160,6 +169,7 @@ export function FlightsPage(props: {
       {[...groups].map(([key, list]) => {
         const keys = list.map((f) => f.key);
         const allPicked = keys.every((k) => picked.has(k));
+        const hasPacks = list.some((f) => f.pack);
         const title = list[0]!.hasDate ? day(list[0]!.start, t.locale) : key;
         return (
           <Card key={key}>
@@ -189,6 +199,7 @@ export function FlightsPage(props: {
                 <span className="w-14 text-right">{t.colDuration}</span>
                 <span className="w-16 text-right">{t.colDistance}</span>
                 <span className="w-14 text-right">{t.colAltitude}</span>
+                {hasPacks && <span className="w-40">{t.colPack}</span>}
               </div>
               <ul className="m-0 list-none p-0">
                 {list.map((f) => {
@@ -215,6 +226,11 @@ export function FlightsPage(props: {
                         <span className="w-14 text-right text-sm tabular-nums" title={t.colAltitude}>
                           {altitude(f.maxAlt, f.altUnit)}
                         </span>
+                        {hasPacks && (
+                          <span className="w-40 truncate text-sm text-muted" title={f.pack ? t.packName(f.pack) : undefined}>
+                            {f.pack ? t.packName(f.pack) : '–'}
+                          </span>
+                        )}
                         <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
                           {f.hints > 0 && (
                             <Chip size="sm" variant="soft" color="warning">
@@ -281,7 +297,7 @@ export function FlightsPage(props: {
   );
 }
 
-function FilterSelect(props: { label: string; all: string; value: string; options: string[]; onChange: (v: string) => void }) {
+function FilterSelect(props: { label: string; all: string; value: string; options: { id: string; label: string }[]; onChange: (v: string) => void }) {
   return (
     <Select aria-label={props.label} className="w-48" selectedKey={props.value || '*'} onSelectionChange={(k) => props.onChange(k === '*' || k === null ? '' : String(k))}>
       <Select.Trigger>
@@ -290,9 +306,9 @@ function FilterSelect(props: { label: string; all: string; value: string; option
       </Select.Trigger>
       <Select.Popover>
         <ListBox>
-          {['*', ...props.options].map((o) => (
-            <ListBox.Item key={o} id={o} textValue={o === '*' ? props.all : o}>
-              {o === '*' ? props.all : o}
+          {[{ id: '*', label: props.all }, ...props.options].map((o) => (
+            <ListBox.Item key={o.id} id={o.id} textValue={o.label}>
+              {o.label}
               <ListBox.ItemIndicator />
             </ListBox.Item>
           ))}

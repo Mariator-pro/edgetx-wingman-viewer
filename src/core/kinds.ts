@@ -25,6 +25,33 @@ export interface ExtraValue {
   values: (number | null)[];
 }
 
+// Levels of the cores per log line: Lipo Nanny and Link Sentinel 0 OK, 1 warning, 2 critical; GPS Homer's reason
+// (0 none, else max. altitude, max. distance or GPS lost).
+export const STAGES = ['lnst', 'lsst', 'ghst'] as const;
+export type StageRole = (typeof STAGES)[number];
+
+// How much weaker antenna 2 is than antenna 1 (1RSS minus 2RSS, mean dB) in 8 directions, clockwise from the front
+// of the model (where the radio is as seen from the model) or, without a heading in the log, from north (where
+// the model is as seen from takeoff). null: too few log lines in that direction.
+export interface AntennaRose {
+  basis: 'model' | 'compass';
+  sectors: (number | null)[];
+  counts: number[];
+}
+
+// The kind of model the attitude view shows, chosen per model and radio; until then a plain arrow.
+export const AIRFRAMES = ['copter', 'plane', 'wing'] as const;
+export type Airframe = (typeof AIRFRAMES)[number];
+export const isAirframe = (v: unknown): v is Airframe => AIRFRAMES.includes(v as Airframe);
+
+// Attitude per log line in degrees: pitch positive with the nose up, roll positive with the right side down, yaw as
+// the heading (clockwise from north); without telemetry null.
+export interface Attitude {
+  pitch: (number | null)[];
+  roll: (number | null)[];
+  yaw?: (number | null)[]; // Yaw, else Hdg; neither: the model keeps facing north
+}
+
 export interface Track {
   rows: { t: number[]; values: Partial<Record<TrackValue, (number | null)[]>>; fm?: (number | null)[] };
   modes: string[]; // flight mode texts, fm holds their index
@@ -33,6 +60,9 @@ export interface Track {
   sticks?: Partial<Record<Stick, (number | null)[]>>;
   stickMode?: StickMode; // as set on the radio, if its settings are known
   extra?: ExtraValue[]; // the log's other sensors, so every value can be shown
+  stages?: Partial<Record<StageRole, (number | null)[]>>; // without telemetry null
+  antennas?: AntennaRose;
+  attitude?: Attitude; // only with both pitch and roll in the log
   path: PathPoint[][]; // segments; a fix missing for 3 s or more starts a new one
   home?: [number, number]; // lon, lat
   end?: [number, number];

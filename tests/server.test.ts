@@ -124,6 +124,22 @@ describe('server', () => {
     expect(await (await api('/api/flight/track?key=nope')).json()).toMatchObject({ code: 'flightNotFound' });
   });
 
+  it('keeps the kind of model per model and radio for the attitude view', async () => {
+    const track = async (key: string) => (await (await api(`/api/flight/track?key=${encodeURIComponent(key)}`)).json()) as TrackView;
+    const tr = await track('sample');
+    expect(tr.airframe).toBe('copter'); // the sample flight is a copter until chosen
+    expect(tr.attitude!.pitch).toHaveLength(tr.rows.t.length);
+    const [a, b] = (await (await api('/api/flights')).json()) as FlightView[];
+    expect((await track(a!.key)).airframe).toBeUndefined();
+    expect((await post('/api/flight/airframe', { key: a!.key, airframe: 'wing' })).status).toBe(200);
+    // the other flight of the same model on the same radio too
+    expect((await track(b!.key)).airframe).toBe('wing');
+    expect(JSON.parse(await readFile(join(dir, 'data', 'flights.json'), 'utf8')).airframes).toEqual({ 'tx16s/Sample Quad': 'wing' });
+    expect((await post('/api/flight/airframe', { key: a!.key, airframe: 'heli' })).status).toBe(400);
+    await post('/api/flight/airframe', { key: a!.key, airframe: null });
+    expect((await track(a!.key)).airframe).toBeUndefined();
+  });
+
   it('keeps the tile address and the ArcGIS key, and lets the page load tiles only from there', async () => {
     const csp = async () => (await api('/api/state')).headers.get('content-security-policy')!;
     expect(await csp()).toContain('img-src \'self\' data: blob: https://tile.openstreetmap.org;');
