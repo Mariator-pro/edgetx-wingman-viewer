@@ -1,6 +1,5 @@
 import { Button, Dropdown, Label, Switch } from '@heroui/react';
 import { useEffect, useState } from 'react';
-import type { EventKind } from '../../core/kinds.ts';
 import type { TrackView } from '../../server/api.ts';
 import { extent, formatDelta, formatValue, type Series } from '../series.ts';
 import { rowAt } from '../track.ts';
@@ -23,7 +22,6 @@ const LABEL_W = 120;
 const AXIS_W = 72;
 const OVERVIEW_H = 44;
 const PAD = 8;
-const BAD: EventKind[] = ['link-lost', 'failsafe'];
 const FOLD_MS = 200; // a strip opens and closes this fast, so the page grows and shrinks smoothly
 
 // Colors for the chosen values: the ones they had, the first free one for new ones.
@@ -164,10 +162,6 @@ export function Charts(props: {
 
   const overview = shown[0] ?? series.find((s) => s.id === 'alt');
   const overviewExtent = overview ? extent(overview.values) : undefined;
-  const lines = [
-    ...track.events.map((e) => ({ t: e.t, cls: BAD.includes(e.kind) ? 'stroke-danger' : 'stroke-foreground', dash: '', key: `e${e.t}${e.kind}` })),
-    ...track.hints.map((h) => ({ t: h.t, cls: 'stroke-warning', dash: '3 3', key: `h${h.t}${h.kind}` })),
-  ].filter((l) => l.t >= range[0] && l.t <= range[1]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -222,9 +216,6 @@ export function Charts(props: {
           })}
         {w > 0 && shown.length > 0 && (
           <svg width={w} height={shown.length * STRIP_H} className="pointer-events-none absolute top-0" style={{ left: LABEL_W }} aria-hidden="true">
-            {lines.map((l) => (
-              <line key={l.key} x1={x(l.t)} x2={x(l.t)} y1={0} y2={shown.length * STRIP_H} className={l.cls} strokeOpacity={0.35} strokeDasharray={l.dash} />
-            ))}
             {[marks.a, marks.b].map((m, i) =>
               m !== undefined && m >= range[0] && m <= range[1] ? (
                 <g key={i}>

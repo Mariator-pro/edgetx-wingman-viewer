@@ -1,8 +1,8 @@
 import type { MeshAttributes } from '@loaders.gl/schema';
 import type { Airframe } from '../core/kinds.ts';
 
-// The models of the attitude view, built from simple shapes: light grey with dark details, the front marked
-// orange. Authored with x to the right, y up and the nose towards -z, then turned into deck.gl's frame
+// The models of the attitude view, built from simple shapes: light grey (blue grey in light mode) with dark
+// details, the front marked orange. Authored with x to the right, y up and the nose towards -z, then turned into deck.gl's frame
 // (x forward, y left, z up), in which pitch turns about y, roll about x and yaw about z.
 
 type V3 = [number, number, number];
@@ -14,11 +14,18 @@ export interface AirframeMesh {
 }
 
 const hex = (h: number): Rgb => [((h >> 16) & 255) / 255, ((h >> 8) & 255) / 255, (h & 255) / 255];
-const ORANGE = hex(0xf97316);
-const LIGHT = hex(0xe4e4e7);
-const MID = hex(0x71717a);
-const DARK = hex(0x27272a);
-const PROP = hex(0xd4d4d8);
+interface Palette {
+  front: Rgb;
+  light: Rgb;
+  mid: Rgb;
+  dark: Rgb;
+  prop: Rgb;
+}
+// light grey on the dark card; on the light card a blue grey, so the model stands out from the white
+const PALETTES: Record<'dark' | 'light', Palette> = {
+  dark: { front: hex(0xf97316), light: hex(0xe4e4e7), mid: hex(0x71717a), dark: hex(0x27272a), prop: hex(0xd4d4d8) },
+  light: { front: hex(0xf97316), light: hex(0x94a3b8), mid: hex(0x475569), dark: hex(0x1e293b), prop: hex(0x64748b) },
+};
 
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
@@ -179,26 +186,26 @@ function wingOutline(span: number, root: number, tip: number, sweep: number): [n
 // outline from above at height y: (u, v, w) = (x, z, y)
 const flat = (y: number, z: number) => (u: number, v: number, w: number): V3 => [u, y + w, z + v];
 
-function plane(): AirframeMesh {
+function plane(col: Palette): AirframeMesh {
   const b = new Builder();
   const p = new Builder();
   // fuselage: round nose, widest behind the cowling, thin towards the tail
   const prof: [number, number][] = [[0, 0], [0.01, 0.07], [0.05, 0.11], [0.14, 0.13], [0.3, 0.135], [0.55, 0.12], [0.9, 0.08], [1.2, 0.045], [1.32, 0.03], [1.33, 0]];
-  b.revolve(prof.map(([z, r]) => [z - 0.5, r]), 'z', [0, 0, 0], LIGHT);
-  b.extrude(wingOutline(1.15, 0.36, 0.22, 0.04), -0.02, 0.02, flat(0.145, -0.04), LIGHT);
-  b.extrude(wingOutline(0.42, 0.2, 0.12, 0.05), -0.012, 0.012, flat(0.03, 0.66), LIGHT);
+  b.revolve(prof.map(([z, r]) => [z - 0.5, r]), 'z', [0, 0, 0], col.light);
+  b.extrude(wingOutline(1.15, 0.36, 0.22, 0.04), -0.02, 0.02, flat(0.145, -0.04), col.light);
+  b.extrude(wingOutline(0.42, 0.2, 0.12, 0.05), -0.012, 0.012, flat(0.03, 0.66), col.light);
   // fin, swept back: outline (back, up), thin across
-  b.extrude([[0, 0], [0.26, 0], [0.24, 0.24], [0.12, 0.27]], -0.01, 0.01, (u, v, w) => [w, 0.05 + v, 0.55 + u], MID);
+  b.extrude([[0, 0], [0.26, 0], [0.24, 0.24], [0.12, 0.27]], -0.01, 0.01, (u, v, w) => [w, 0.05 + v, 0.55 + u], col.mid);
   // cabin under the wing, windscreen in front of it
-  b.revolve(ellipse(0.3, 10), 'z', [0, 0.06, -0.06], LIGHT, 24, [0.11, 0.1]);
-  b.revolve(ellipse(0.16, 8), 'z', [0, 0.075, -0.27], DARK, 24, [0.095, 0.085], true);
-  b.revolve([[-0.5, 0], [-0.5, 0.06], [-0.63, 0]], 'z', [0, 0, 0], ORANGE);
+  b.revolve(ellipse(0.3, 10), 'z', [0, 0.06, -0.06], col.light, 24, [0.11, 0.1]);
+  b.revolve(ellipse(0.16, 8), 'z', [0, 0.075, -0.27], col.dark, 24, [0.095, 0.085], true);
+  b.revolve([[-0.5, 0], [-0.5, 0.06], [-0.63, 0]], 'z', [0, 0, 0], col.front);
   for (const x of [0.16, -0.16]) {
-    b.box([x * 0.62, -0.17, -0.3], [0.016, 0.22, 0.016], DARK);
-    b.revolve([[-0.018, 0], [-0.018, 0.055], [0.018, 0.055], [0.018, 0]], 'x', [x, -0.27, -0.3], DARK, 20);
+    b.box([x * 0.62, -0.17, -0.3], [0.016, 0.22, 0.016], col.dark);
+    b.revolve([[-0.018, 0], [-0.018, 0.055], [0.018, 0.055], [0.018, 0]], 'x', [x, -0.27, -0.3], col.dark, 20);
   }
-  b.revolve([[-0.01, 0], [-0.01, 0.025], [0.01, 0.025], [0.01, 0]], 'x', [0, -0.085, 0.66], DARK, 14);
-  p.revolve([[-0.005, 0], [-0.005, 0.3], [0.005, 0.3], [0.005, 0]], 'z', [0, 0, -0.52], PROP, 40);
+  b.revolve([[-0.01, 0], [-0.01, 0.025], [0.01, 0.025], [0.01, 0]], 'x', [0, -0.085, 0.66], col.dark, 14);
+  p.revolve([[-0.005, 0], [-0.005, 0.3], [0.005, 0.3], [0.005, 0]], 'z', [0, 0, -0.52], col.prop, 40);
   return { body: b.mesh(), props: p.mesh() };
 }
 
@@ -210,46 +217,47 @@ function ellipse(len: number, steps: number): [number, number][] {
   });
 }
 
-function quad(): AirframeMesh {
+function quad(col: Palette): AirframeMesh {
   const b = new Builder();
   const p = new Builder();
-  for (const a of [Math.PI / 4, -Math.PI / 4]) b.box([0, 0, 0], [2, 0.05, 0.12], DARK, a);
-  b.box([0, 0.05, 0], [0.42, 0.08, 0.62], MID);
-  b.box([0, 0.18, 0], [0.3, 0.16, 0.5], LIGHT);
-  b.box([0, 0.08, -0.36], [0.18, 0.16, 0.14], ORANGE);
+  for (const a of [Math.PI / 4, -Math.PI / 4]) b.box([0, 0, 0], [2, 0.05, 0.12], col.dark, a);
+  b.box([0, 0.05, 0], [0.42, 0.08, 0.62], col.mid);
+  b.box([0, 0.18, 0], [0.3, 0.16, 0.5], col.light);
+  b.box([0, 0.08, -0.36], [0.18, 0.16, 0.14], col.front);
   for (const [x, z] of [[1, 1], [1, -1], [-1, 1], [-1, -1]] as const) {
     const c: V3 = [x * 0.707, 0, z * 0.707];
-    b.revolve([[0, 0], [0, 0.08], [0.12, 0.08], [0.12, 0]], 'y', c, z < 0 ? ORANGE : MID, 20);
-    p.revolve([[0.125, 0], [0.125, 0.36], [0.135, 0.36], [0.135, 0]], 'y', c, PROP, 40);
+    b.revolve([[0, 0], [0, 0.08], [0.12, 0.08], [0.12, 0]], 'y', c, z < 0 ? col.front : col.mid, 20);
+    p.revolve([[0.125, 0], [0.125, 0.36], [0.135, 0.36], [0.135, 0]], 'y', c, col.prop, 40);
   }
   return { body: b.mesh(), props: p.mesh() };
 }
 
-function wing(): AirframeMesh {
+function wing(col: Palette): AirframeMesh {
   const b = new Builder();
   const p = new Builder();
   const outline: [number, number][] = [[0, -0.7], [1.15, 0.25], [1.15, 0.5], [0.25, 0.25], [0, 0.35], [-0.25, 0.25], [-1.15, 0.5], [-1.15, 0.25]];
-  b.extrude(outline, -0.035, 0.035, flat(0, 0), LIGHT);
+  b.extrude(outline, -0.035, 0.035, flat(0, 0), col.light);
   // pod with an orange nose
-  b.revolve([[-0.42, 0.1], [0.05, 0.1], [0.12, 0.08], [0.17, 0]], 'z', [0, 0.06, 0], MID);
-  b.revolve(ellipse(0.1, 8).filter(([s]) => s <= 0.001), 'z', [0, 0.06, -0.42], ORANGE, 24, [0.1, 0.1]);
-  for (const x of [1.13, -1.13]) b.box([x, 0.07, 0.38], [0.03, 0.22, 0.25], MID);
-  p.revolve([[-0.005, 0], [-0.005, 0.25], [0.005, 0.25], [0.005, 0]], 'z', [0, 0.06, 0.42], PROP, 40);
+  b.revolve([[-0.42, 0.1], [0.05, 0.1], [0.12, 0.08], [0.17, 0]], 'z', [0, 0.06, 0], col.mid);
+  b.revolve(ellipse(0.1, 8).filter(([s]) => s <= 0.001), 'z', [0, 0.06, -0.42], col.front, 24, [0.1, 0.1]);
+  for (const x of [1.13, -1.13]) b.box([x, 0.07, 0.38], [0.03, 0.22, 0.25], col.mid);
+  p.revolve([[-0.005, 0], [-0.005, 0.25], [0.005, 0.25], [0.005, 0]], 'z', [0, 0.06, 0.42], col.prop, 40);
   return { body: b.mesh(), props: p.mesh() };
 }
 
 // Until the kind of model is chosen: a plain arrow with an orange tip.
-function arrow(): AirframeMesh {
+function arrow(col: Palette): AirframeMesh {
   const b = new Builder();
-  b.extrude([[0, -0.9], [0.7, 0.7], [0, 0.35], [-0.7, 0.7]], -0.04, 0.04, flat(0, 0), LIGHT);
-  b.extrude([[0, -0.9], [0.18, -0.48], [-0.18, -0.48]], -0.045, 0.045, flat(0.002, 0), ORANGE);
+  b.extrude([[0, -0.9], [0.7, 0.7], [0, 0.35], [-0.7, 0.7]], -0.04, 0.04, flat(0, 0), col.light);
+  b.extrude([[0, -0.9], [0.18, -0.48], [-0.18, -0.48]], -0.045, 0.045, flat(0.002, 0), col.front);
   return { body: b.mesh() };
 }
 
-const BUILD: Record<Airframe | 'arrow', () => AirframeMesh> = { copter: quad, plane, wing, arrow };
+const BUILD: Record<Airframe | 'arrow', (col: Palette) => AirframeMesh> = { copter: quad, plane, wing, arrow };
 const cache = new Map<string, AirframeMesh>();
-export function airframeMesh(kind: Airframe | 'arrow'): AirframeMesh {
-  let m = cache.get(kind);
-  if (!m) cache.set(kind, (m = BUILD[kind]()));
+export function airframeMesh(kind: Airframe | 'arrow', theme: 'dark' | 'light'): AirframeMesh {
+  const key = `${kind}-${theme}`;
+  let m = cache.get(key);
+  if (!m) cache.set(key, (m = BUILD[kind](PALETTES[theme])));
   return m;
 }

@@ -1,7 +1,8 @@
-import { Alert, Button, ButtonGroup, Card, Chip, Dropdown, ListBox, Select, Slider, Tabs, ToggleButton, ToggleButtonGroup } from '@heroui/react';
+import { Alert, Button, ButtonGroup, Card, Chip, Dropdown, ListBox, Select, Slider, Tabs, ToggleButton, ToggleButtonGroup, Tooltip } from '@heroui/react';
 import type { Map as MapLibre } from 'maplibre-gl';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Airframe, EventKind, TrackValue } from '../../core/kinds.ts';
+import { ROLES } from '../../core/roles.ts';
 import type { MapSettingsView, TrackView } from '../../server/api.ts';
 import { get, post } from '../api.ts';
 import { clockText, distance, duration } from '../format.ts';
@@ -15,6 +16,9 @@ import { FlightMap, type Base, type View } from './FlightMap.tsx';
 import { Scatter } from './Scatter.tsx';
 import { Sticks } from './Sticks.tsx';
 import { FitIcon, LayersIcon, MinusIcon, PauseIcon, PlayIcon, PlusIcon } from './icons.tsx';
+
+// Warning levels and pack number of the cores: shown as colors, hints and the pack, not as bare numbers.
+const CORE_SENSORS = new Set<string>([...ROLES.lnst, ...ROLES.lnpk, ...ROLES.lsst, ...ROLES.ghst]);
 
 const SPEEDS = [1, 2, 5, 10, 30];
 // square buttons; the group's rounded corners come from clipping
@@ -152,7 +156,7 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
   const shownTime = hover ?? time;
   const row = rowAt(track, shownTime);
   const series = seriesOf(track, t);
-  const extra = series.filter((s) => s.id.startsWith('log:'));
+  const extra = series.filter((s) => s.id.startsWith('log:') && !CORE_SENSORS.has(s.name));
   const up = SHOWN.some((k) => (k === 'fm' ? track.rows.fm?.[row] != null : track.rows.values[k]?.[row] != null));
   const values = SHOWN.flatMap((k): { k: string; name: string; label: string; value: string }[] => {
     if (k === 'fm') {
@@ -379,25 +383,25 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
               <div className="relative min-w-0 flex-1 pt-4" data-flight-slider>
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-4">
                   {track.events.map((e) => (
-                    <button
+                    <TimelineMark
                       key={`${e.t}${e.kind}`}
-                      type="button"
-                      title={`${t.eventNames[e.kind]} ${fromTakeoff(e.t, track.takeoff)}`}
-                      aria-label={t.jumpTo(t.eventNames[e.kind], fromTakeoff(e.t, track.takeoff))}
-                      className={`pointer-events-auto absolute top-0.5 h-3 w-0.5 -translate-x-1/2 cursor-pointer rounded-full border-0 p-0 ${markColor(e.kind)}`}
-                      style={{ left: pct(e.t) }}
-                      onClick={() => seek(e.t)}
+                      name={t.eventNames[e.kind]}
+                      when={fromTakeoff(e.t, track.takeoff)}
+                      label={t.jumpTo(t.eventNames[e.kind], fromTakeoff(e.t, track.takeoff))}
+                      className={`top-0.5 h-3 w-0.5 rounded-full ${markColor(e.kind)}`}
+                      left={pct(e.t)}
+                      onPick={() => seek(e.t)}
                     />
                   ))}
                   {track.hints.map((h) => (
-                    <button
+                    <TimelineMark
                       key={`${h.t}${h.kind}`}
-                      type="button"
-                      title={`${t.hintNames[h.kind]} ${fromTakeoff(h.t, track.takeoff)}`}
-                      aria-label={t.jumpTo(t.hintNames[h.kind], fromTakeoff(h.t, track.takeoff))}
-                      className="pointer-events-auto absolute top-1 size-2.5 -translate-x-1/2 rotate-45 cursor-pointer rounded-[2px] border-0 bg-warning p-0"
-                      style={{ left: pct(h.t) }}
-                      onClick={() => seek(h.t)}
+                      name={t.hintNames[h.kind]}
+                      when={fromTakeoff(h.t, track.takeoff)}
+                      label={t.jumpTo(t.hintNames[h.kind], fromTakeoff(h.t, track.takeoff))}
+                      className="top-1 size-2.5 rotate-45 rounded-[2px] bg-warning"
+                      left={pct(h.t)}
+                      onPick={() => seek(h.t)}
                     />
                   ))}
                 </div>
@@ -534,7 +538,7 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
 function EventList(props: { title: string; empty: string; items: { t: number; text: string }[]; takeoff: number; onPick: (t: number) => void }) {
   const { t } = usePrefs();
   return (
-    <Card>
+    <Card variant="secondary">
       <Card.Header>
         <Card.Title>{props.title}</Card.Title>
       </Card.Header>
@@ -548,7 +552,7 @@ function EventList(props: { title: string; empty: string; items: { t: number; te
                 <button
                   type="button"
                   aria-label={t.jumpTo(e.text, fromTakeoff(e.t, props.takeoff))}
-                  className="flex w-full cursor-pointer gap-4 border-0 bg-transparent px-5 py-2 text-left text-sm text-foreground hover:bg-surface-secondary"
+                  className="flex w-full cursor-pointer gap-4 border-0 bg-transparent px-5 py-2 text-left text-sm text-foreground hover:bg-surface-tertiary"
                   onClick={() => props.onPick(e.t)}
                 >
                   <span className="w-16 font-mono tabular-nums text-muted">{fromTakeoff(e.t, props.takeoff)}</span>
@@ -560,5 +564,28 @@ function EventList(props: { title: string; empty: string; items: { t: number; te
         )}
       </Card.Content>
     </Card>
+  );
+}
+
+// An event or hint above the timeline: its name and time at once on pointing, a click jumps there.
+function TimelineMark(props: { name: string; when: string; label: string; className: string; left: string; onPick: () => void }) {
+  return (
+    <Tooltip delay={0} closeDelay={0}>
+      <Tooltip.Trigger
+        aria-label={props.label}
+        className={`pointer-events-auto absolute -translate-x-1/2 cursor-pointer ${props.className}`}
+        style={{ left: props.left }}
+        onClick={props.onPick}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          e.preventDefault();
+          props.onPick();
+        }}
+      />
+      <Tooltip.Content showArrow placement="top">
+        <Tooltip.Arrow />
+        <span className="font-medium">{props.name}</span> <span className="tabular-nums text-muted">{props.when}</span>
+      </Tooltip.Content>
+    </Tooltip>
   );
 }

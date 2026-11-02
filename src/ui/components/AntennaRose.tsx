@@ -5,7 +5,7 @@ import { usePrefs } from '../usePrefs.ts';
 
 const ANT1 = '#0ea5e9';
 const ANT2 = '#f97316';
-const CX = 120;
+const CX = 150;
 const CY = 112;
 const R = 82;
 
@@ -19,14 +19,14 @@ export function AntennaRose({ rose }: { rose: Rose }) {
   const names = rose.basis === 'model' ? t.roseModel : t.roseCompass;
   const where = rose.basis === 'model' ? t.radioWhere : t.modelWhere;
   return (
-    <Card>
+    <Card variant="secondary">
       <Card.Header>
         <Card.Title>{t.antennas}</Card.Title>
         <Card.Description>{rose.basis === 'model' ? t.antennasModel : t.antennasCompass}</Card.Description>
       </Card.Header>
       <Card.Content className="gap-3">
-        <svg viewBox="0 0 240 222" className="mx-auto block w-full max-w-72" role="img" aria-label={roseResult(rose, t)}>
-          <circle cx={CX} cy={CY} r={R} className="fill-surface-secondary stroke-muted" strokeOpacity={0.3} />
+        <svg viewBox="0 0 300 222" className="mx-auto block w-full max-w-80" role="img" aria-label={roseResult(rose, t)}>
+          <circle cx={CX} cy={CY} r={R} className="fill-surface-tertiary stroke-muted" strokeOpacity={0.3} />
           <circle cx={CX} cy={CY} r={R / 2} fill="none" className="stroke-muted" strokeOpacity={0.3} />
           {/* ring labels at the lower right, away from the direction names */}
           {[scale / 2, scale].map((v) => {
@@ -56,11 +56,16 @@ export function AntennaRose({ rose }: { rose: Rose }) {
               </path>
             );
           })}
-          {names.map((name, i) => (
-            <text key={name} x={pt(i * 90, R + 14).split(',')[0]} y={Number(pt(i * 90, R + 14).split(',')[1]) + 4} fontSize={11} textAnchor="middle" className="fill-muted">
-              {name}
-            </text>
-          ))}
+          {/* front and back centred, the sides pointing away from the circle so longer words stay outside */}
+          {names.map((name, i) => {
+            const side = i === 1 || i === 3;
+            const [x, y] = pt(i * 90, side ? R + 6 : R + 14).split(',').map(Number);
+            return (
+              <text key={name} x={x} y={y! + 4} fontSize={11} textAnchor={i === 1 ? 'start' : i === 3 ? 'end' : 'middle'} className="fill-muted">
+                {name}
+              </text>
+            );
+          })}
           <text x={CX} y={CY + 15} fontSize={9} textAnchor="middle" className="fill-foreground" fontWeight={600}>
             {rose.basis === 'model' ? t.roseCenterModel : t.roseCenterCompass}
           </text>

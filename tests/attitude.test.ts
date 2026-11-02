@@ -54,9 +54,9 @@ describe('attitude', () => {
     expect(attitudeAt(tr, 1)).toBeDefined(); // preflight has telemetry
   });
 
-  it('builds every model with the front marked orange', () => {
-    for (const kind of [...AIRFRAMES, 'arrow' as const]) {
-      const m = airframeMesh(kind).body;
+  it('builds every model in both themes with the front marked orange', () => {
+    for (const [kind, theme] of [...AIRFRAMES, 'arrow' as const].flatMap((k) => (['dark', 'light'] as const).map((th) => [k, th] as const))) {
+      const m = airframeMesh(kind, theme).body;
       const p = m.positions!.value as Float32Array;
       const c = m.colors!.value as Float32Array;
       const n = m.normals!.value as Float32Array;

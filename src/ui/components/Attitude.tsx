@@ -38,7 +38,7 @@ export function Attitude(props: Props) {
 
 // The model at the moment shown, with pitch, roll and yaw from the log; a menu chooses the kind of model.
 function AttitudeCard(props: Props & { onHide: () => void }) {
-  const { t } = usePrefs();
+  const { t, theme } = usePrefs();
   const box = useRef<HTMLDivElement>(null);
   const deck = useRef<Deck<OrbitView> | null>(null);
   const kind = props.airframe ?? 'arrow';
@@ -64,18 +64,18 @@ function AttitudeCard(props: Props & { onHide: () => void }) {
   }, []);
 
   useEffect(() => {
-    const mesh = airframeMesh(kind);
+    const mesh = airframeMesh(kind, theme);
     // deck.gl: pitch positive with the nose down, yaw counter-clockwise from east
     const orientation: [number, number, number] = att ? [-att.pitch, 90 - att.yaw, att.roll] : [0, 90, 0];
     const common = { coordinateSystem: COORDINATE_SYSTEM.CARTESIAN, data: [0], getPosition: () => [0, 0, 0] as [number, number, number], getOrientation: () => orientation, updateTriggers: { getOrientation: orientation } };
     deck.current?.setProps({
       layers: [
         new LineLayer({ id: 'ground', data: GRID, coordinateSystem: COORDINATE_SYSTEM.CARTESIAN, getSourcePosition: (d) => d.from as [number, number, number], getTargetPosition: (d) => d.to as [number, number, number], getColor: [120, 120, 130, 70], getWidth: 1 }),
-        new SimpleMeshLayer<number>({ ...common, id: `body-${kind}`, mesh: mesh.body, getColor: [255, 255, 255], parameters: { depthWriteEnabled: true, depthCompare: 'less-equal' } }),
-        ...(mesh.props ? [new SimpleMeshLayer<number>({ ...common, id: `props-${kind}`, mesh: mesh.props, getColor: [255, 255, 255], opacity: 0.3, parameters: { depthWriteEnabled: false, depthCompare: 'less-equal' } })] : []),
+        new SimpleMeshLayer<number>({ ...common, id: `body-${kind}-${theme}`, mesh: mesh.body, getColor: [255, 255, 255], parameters: { depthWriteEnabled: true, depthCompare: 'less-equal' } }),
+        ...(mesh.props ? [new SimpleMeshLayer<number>({ ...common, id: `props-${kind}-${theme}`, mesh: mesh.props, getColor: [255, 255, 255], opacity: 0.3, parameters: { depthWriteEnabled: false, depthCompare: 'less-equal' } })] : []),
       ],
     });
-  }, [kind, att?.pitch, att?.roll, att?.yaw]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [kind, theme, att?.pitch, att?.roll, att?.yaw]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const names: Record<Airframe | 'arrow', string> = t.airframeNames;
   return (
