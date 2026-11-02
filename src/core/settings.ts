@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { isStickMode, type StickMode } from './kinds.ts';
+import { isStickMode, LIST_COLUMNS, LIST_SORTS, type ListColumn, type ListSort, type StickMode } from './kinds.ts';
+import { printable } from './paths.ts';
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
@@ -44,8 +45,38 @@ export const validKey = (v: unknown): v is string => typeof v === 'string' && v.
 
 export const tilesOrigin = (tiles: string) => new URL(tiles.replace(/[{}]/g, '')).origin;
 
+// Filters, order and hidden columns of the list of flights, as last chosen; the search is not kept.
+export interface ListPrefs {
+  model?: string;
+  radio?: string;
+  pack?: string; // "board:number"
+  tag?: string;
+  deleted?: boolean;
+  sort?: ListSort;
+  order?: 'ascending' | 'descending';
+  hidden?: ListColumn[];
+}
+
+const MAX_FILTER = 200;
+const filterText = (v: unknown) => (typeof v === 'string' && v !== '' ? printable(v).slice(0, MAX_FILTER) : undefined);
+
+// Only known values and short plain texts; anything else is left out.
+export function listPrefs(v: unknown): ListPrefs {
+  if (!isObject(v)) return {};
+  const out: ListPrefs = {};
+  for (const k of ['model', 'radio', 'pack', 'tag'] as const) {
+    const s = filterText(v[k]);
+    if (s) out[k] = s;
+  }
+  if (v.deleted === true) out.deleted = true;
+  if (LIST_SORTS.includes(v.sort as ListSort)) out.sort = v.sort as ListSort;
+  if (v.order === 'ascending' || v.order === 'descending') out.order = v.order;
+  if (Array.isArray(v.hidden)) out.hidden = LIST_COLUMNS.filter((c) => (v.hidden as unknown[]).includes(c));
+  return out;
+}
+
 export interface Settings {
-  ui?: { lang?: string; theme?: 'light' | 'dark'; sticks?: StickMode; attitude?: 'shown' | 'hidden' }; // interface language, theme, stick mode (for logs without the radio's settings) and the attitude view on the map, as last chosen
+  ui?: { lang?: string; theme?: 'light' | 'dark'; sticks?: StickMode; attitude?: 'shown' | 'hidden'; list?: ListPrefs }; // interface language, theme, stick mode (for logs without the radio's settings) and the attitude view on the map, as last chosen
   map?: MapSettings;
   lastSync?: string; // when logs were last copied from an SD card
 }
@@ -61,6 +92,7 @@ export async function loadSettings(file: string): Promise<Settings> {
       ...(ui.theme === 'light' || ui.theme === 'dark' ? { theme: ui.theme } : {}),
       ...(isStickMode(ui.sticks) ? { sticks: ui.sticks } : {}),
       ...(ui.attitude === 'shown' || ui.attitude === 'hidden' ? { attitude: ui.attitude } : {}),
+      ...(isObject(ui.list) ? { list: listPrefs(ui.list) } : {}),
     },
     map: {
       ...(validTiles(map.tiles) ? { tiles: map.tiles } : {}),

@@ -193,6 +193,16 @@ describe('server', () => {
     expect((await api('/api/prefs', { method: 'POST', body: 'x'.repeat(2 * 1024 * 1024) })).status).toBe(413);
   });
 
+  it('keeps filters, order and columns of the list, only known values and plain short texts', async () => {
+    const list = { model: 'Daily\u0007 Quad', radio: 'x'.repeat(300), deleted: true, sort: 'duration', order: 'ascending', hidden: ['time', 'nope'], other: 1 };
+    expect((await post('/api/prefs', { list })).status).toBe(200);
+    const kept = JSON.parse(await readFile(join(dir, 'data', 'settings.json'), 'utf8')).ui.list;
+    expect(kept).toEqual({ model: 'Daily Quad', radio: 'x'.repeat(200), deleted: true, sort: 'duration', order: 'ascending', hidden: ['time'] });
+    expect((await post('/api/prefs', { list: {} })).status).toBe(200);
+    expect(JSON.parse(await readFile(join(dir, 'data', 'settings.json'), 'utf8')).ui.list).toEqual({});
+    expect((await post('/api/prefs', { list: 'model' })).status).toBe(400);
+  });
+
   it('notes the running server for a second start, only for this user; a note of a killed server does not count', async () => {
     const file = join(dir, 'data', 'server.json');
     const forget = await noteServer(file, server.open);

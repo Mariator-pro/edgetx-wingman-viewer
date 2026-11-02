@@ -13,6 +13,10 @@ export function day(stamp: string, locale: string): string {
   return localDate(stamp).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+export function shortDay(stamp: string, locale: string): string {
+  return localDate(stamp).toLocaleDateString(locale, { dateStyle: 'medium' });
+}
+
 export function time(stamp: string, locale: string, seconds = false): string {
   return localDate(stamp).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', ...(seconds ? { second: '2-digit' } : {}) });
 }

@@ -80,7 +80,7 @@ export function ViewerPage(props: {
     setTagOpen(false);
   };
   const subtitle = f.sample ? t.sampleText : [f.hasDate ? `${day(f.start, t.locale)}, ${time(f.start, t.locale)}` : f.file, radioLabel(t, f)].join(' · ');
-  const facts = [duration(f.duration), t.maxDistance(distance(f.maxDistance, t.locale)), t.maxAltitude(altitude(f.maxAlt, f.altUnit))];
+  const facts = [t.flightDuration(duration(f.duration)), t.maxDistance(distance(f.maxDistance, t.locale)), t.maxAltitude(altitude(f.maxAlt, f.altUnit))];
 
   return (
     <div className="flex flex-col gap-4">

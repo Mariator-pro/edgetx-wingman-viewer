@@ -1,6 +1,7 @@
 // Shapes the server sends to the browser interface, shared by both sides; imports only Node-free code,
 // so the interface's type check doesn't pull in Node code.
 import type { Airframe, EventKind, HintKind, StickMode, Track } from '../core/kinds.ts';
+import type { ListPrefs } from '../core/settings.ts';
 
 export interface RadioView {
   volume: string;
@@ -114,6 +115,7 @@ export interface PrefsView {
   theme?: 'light' | 'dark';
   sticks?: StickMode; // stick mode for logs without the radio's settings
   attitude?: 'shown' | 'hidden'; // the attitude view on the map, or only its button
+  list?: ListPrefs; // filters, order and hidden columns of the list of flights
 }
 export const PREFS_META = 'wingman-viewer-prefs';
 

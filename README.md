@@ -9,7 +9,7 @@ Desktop app for macOS, Windows and Linux, in English and German (English by defa
 ## What it does
 
 - **Copies your logs** as soon as the radio is connected, and keeps them on the computer. Flights stay in the app after you delete the logs on the SD card, and you can look at them without the radio.
-- **Lists every flight** with model, radio, date, duration, maximum distance and altitude and the battery pack, grouped by day. A log with several flights (for example one log per day) shows each flight on its own.
+- **Lists every flight** in one table with date, time, model, radio, duration and the battery pack. A log with several flights (for example one log per day) shows each flight on its own.
 - **Shows the flight path on a map**, in 2D or in 3D at its altitude, colored by flight mode, altitude, speed, link quality, battery or the warning levels of your Lua projects on the radio.
 - **Plays the flight back** with a model symbol on the map, the values of every sensor in the log and both sticks at that moment, and a small 3D model of a copter, airplane or flying wing that pitches, rolls and turns as logged.
 - **Draws charts** of any values along the flight, with zoom and two cursors to measure the change between two moments, and plots two values against each other (for example throttle against current).
@@ -68,10 +68,10 @@ Logs from other sources (a backup, a friend's radio) can be added with "Import l
 
 ### 2. Flights
 
-The Flights page lists every flight, newest first, grouped by day. Search for a model, tag, note or battery, or filter by model, pack and tag. Click a flight to open it in the Viewer.
+The Flights page lists every flight in one table, newest first; click a column header to sort by it, click again to turn the order around. Search for a model, tag, note or battery on the right; "Filter" narrows the list by model, radio, pack and tag or shows recently deleted flights, "Sort" chooses the order and "Columns" hides columns you don't need. The app keeps these choices for the next start; "Reset filters" brings back the full list. Click a flight to open it in the Viewer.
 
 - **Delete**: the menu at the end of a row deletes one flight. Select several with the checkboxes (or a whole day) to delete them together. Only that flight goes, other flights from the same log stay.
-- **Recently deleted**: the switch next to the search shows deleted flights. "Restore" brings one back; "Delete now" removes it right away instead of after 30 days.
+- **Recently deleted**: the switch under "Filter" shows deleted flights. "Restore" brings one back; "Delete now" removes it right away instead of after 30 days.
 - **Clean up SD card**: the button under the connected radio deletes logs from the SD card that the app keeps an identical copy of, after asking. Logs that changed since the last copy stay on the card.
 
 ### 3. Viewer

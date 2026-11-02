@@ -167,3 +167,16 @@ export const BatteryIcon = (p: IconProps) => (
     <path d="M21 11v2" />
   </Svg>
 );
+
+export const SortIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 7h16M7 12h10M10 17h4" />
+  </Svg>
+);
+
+export const ColumnsIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M9 5v14M15 5v14" />
+  </Svg>
+);

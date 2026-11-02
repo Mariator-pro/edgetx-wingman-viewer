@@ -9,7 +9,7 @@ import { cleanTags, Library, MAX_IMPORT, MAX_NOTE, type ListedFlight } from '../
 import { isAirframe, isStickMode } from '../core/kinds.ts';
 import type { Paths } from '../core/paths.ts';
 import { radioName } from '../core/radios.ts';
-import { DEFAULT_TILES, ESRI_ORIGIN, loadSettings, saveSettings, tilesOrigin, validKey, validTiles, type MapSettings, type Settings } from '../core/settings.ts';
+import { DEFAULT_TILES, ESRI_ORIGIN, listPrefs, loadSettings, saveSettings, tilesOrigin, validKey, validTiles, type MapSettings, type Settings } from '../core/settings.ts';
 import { flightTrack } from '../core/track.ts';
 import { findCards, readCard, syncCard, type RadioCard } from '../core/store.ts';
 import { listVolumes } from '../platform/volumes.ts';
@@ -426,16 +426,17 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
       );
     },
     'POST /api/prefs': async (req) => {
-      const { lang, theme, sticks, attitude } = await body<PrefsView>(req);
+      const { lang, theme, sticks, attitude, list } = await body<PrefsView>(req);
       if (
         (lang !== undefined && !/^[a-z]{2}$/.test(lang)) ||
         (theme !== undefined && theme !== 'light' && theme !== 'dark') ||
         (sticks !== undefined && !isStickMode(sticks)) ||
-        (attitude !== undefined && attitude !== 'shown' && attitude !== 'hidden')
+        (attitude !== undefined && attitude !== 'shown' && attitude !== 'hidden') ||
+        (list !== undefined && (typeof list !== 'object' || list === null || Array.isArray(list)))
       ) {
         throw new HttpError(400, 'invalidRequest', { what: 'prefs' });
       }
-      s.ui = { ...s.ui, ...(lang ? { lang } : {}), ...(theme ? { theme } : {}), ...(sticks ? { sticks } : {}), ...(attitude ? { attitude } : {}) };
+      s.ui = { ...s.ui, ...(lang ? { lang } : {}), ...(theme ? { theme } : {}), ...(sticks ? { sticks } : {}), ...(attitude ? { attitude } : {}), ...(list ? { list: listPrefs(list) } : {}) };
       await saveSettings(p.settings, s);
     },
   };

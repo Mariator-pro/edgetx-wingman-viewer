@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { isStickMode, type StickMode } from '../core/kinds.ts';
+import type { ListPrefs } from '../core/settings.ts';
 import { PREFS_META, type PrefsView } from '../server/api.ts';
 import { post } from './api.ts';
 import { LANGUAGES, TEXTS, type Lang } from './texts.ts';
@@ -29,6 +30,7 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
   );
   const [sticks, setSticks] = useState<StickMode>(isStickMode(initial.sticks) ? initial.sticks : 2);
   const [attitudeShown, setAttitudeShown] = useState(initial.attitude !== 'hidden');
+  const [list, setList] = useState(initial.list ?? {});
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
@@ -51,7 +53,12 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
     setAttitudeShown(shown);
     save({ attitude: shown ? 'shown' : 'hidden' });
   };
+  const chooseList = (l: ListPrefs) => {
+    if (JSON.stringify(l) === JSON.stringify(list)) return;
+    setList(l);
+    save({ list: l });
+  };
   return (
-    <PrefsContext value={{ t: TEXTS[lang], lang, setLang: chooseLang, theme, setTheme: chooseTheme, sticks, setSticks: chooseSticks, attitudeShown, setAttitudeShown: chooseAttitude }}>{children}</PrefsContext>
+    <PrefsContext value={{ t: TEXTS[lang], lang, setLang: chooseLang, theme, setTheme: chooseTheme, sticks, setSticks: chooseSticks, attitudeShown, setAttitudeShown: chooseAttitude, list, setList: chooseList }}>{children}</PrefsContext>
   );
 }

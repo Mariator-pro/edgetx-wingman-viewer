@@ -202,7 +202,7 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
         </Alert>
       )}
       <div className="flex flex-wrap gap-4">
-        <Card className="relative h-[520px] min-w-0 flex-[999_1_520px] overflow-hidden p-0">
+        <Card className="relative h-[620px] min-w-0 flex-[999_1_520px] overflow-hidden p-0">
           <div className="contents">
             {hasPath && settings ? (
               <FlightMap
@@ -412,7 +412,7 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
           </div>
         </Card>
         {/* as high as the map; the values scroll, the sticks stay at the bottom */}
-        <Card className="h-[520px] flex-[1_1_260px] gap-3 p-4" aria-label={t.values}>
+        <Card className="h-[620px] flex-[1_1_260px] gap-3 p-4" aria-label={t.values}>
           <Card.Header className="flex-row items-baseline justify-between">
             <Card.Title>{t.values}</Card.Title>
             <span className="text-xs tabular-nums text-muted">{t.atTime(clockText(shownTime))}</span>

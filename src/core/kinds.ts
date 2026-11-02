@@ -44,6 +44,12 @@ export const AIRFRAMES = ['copter', 'plane', 'wing'] as const;
 export type Airframe = (typeof AIRFRAMES)[number];
 export const isAirframe = (v: unknown): v is Airframe => AIRFRAMES.includes(v as Airframe);
 
+// The list of flights: columns it sorts by and columns that can be hidden (date and model always show).
+export const LIST_SORTS = ['date', 'model', 'radio', 'duration', 'pack'] as const;
+export type ListSort = (typeof LIST_SORTS)[number];
+export const LIST_COLUMNS = ['time', 'radio', 'duration', 'pack', 'more'] as const;
+export type ListColumn = (typeof LIST_COLUMNS)[number];
+
 // Attitude per log line in degrees: pitch positive with the nose up, roll positive with the right side down, yaw as
 // the heading (clockwise from north); without telemetry null.
 export interface Attitude {
