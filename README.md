@@ -2,6 +2,8 @@
 
 See every flight from your EdgeTX radio on a map, in 2D and 3D, and play it back with the telemetry values, sticks and charts. Plug in the radio, and the app copies the new logs from its SD card and lists each flight on its own, from arming to disarming.
 
+![The Viewer with a flight on the street map, its hints above the map, the values and sticks beside it and the timeline at the bottom](docs/screenshots/viewer.png)
+
 Desktop app for macOS, Windows and Linux, in English and German (English by default, German in a menu at the bottom of the sidebar). For advanced use, a [browser interface](docs/browser-interface.md) and a [command line tool](docs/command-line.md) are available when running from source.
 
 **Early version:** copying logs, the list of flights, the map with playback, values, charts and export all work. It has been tested with logs from the EdgeTX simulator; the check on a real radio is still to come.
@@ -70,15 +72,19 @@ Logs from other sources (a backup, a friend's radio) can be added with "Import l
 
 The Flights page lists every flight in one table, newest first; click a column header to sort by it, click again to turn the order around. Search for a model, tag, note or battery on the right; "Filter" narrows the list by model, radio, pack and tag or shows recently deleted flights, "Sort" chooses the order and "Columns" hides columns you don't need. The app keeps these choices for the next start; "Reset filters" brings back the full list. Click a flight to open it in the Viewer.
 
-- **Delete**: the menu at the end of a row deletes one flight. Select several with the checkboxes (or a whole day) to delete them together. Only that flight goes, other flights from the same log stay.
-- **Recently deleted**: the switch under "Filter" shows deleted flights. "Restore" brings one back; "Delete now" removes it right away instead of after 30 days.
+![The Flights page with four flights of one radio, their duration, pack and hints](docs/screenshots/flights.png)
+
+- **Delete**: the menu at the end of a row deletes one flight. Select several with the checkboxes (the one in the header selects all) to delete them together. Only that flight goes, other flights from the same log stay.
+- **Recently deleted**: the entry under "Filter" shows deleted flights. "Restore" brings one back; "Delete now" removes it right away instead of after 30 days.
 - **Clean up SD card**: the button under the connected radio deletes logs from the SD card that the app keeps an identical copy of, after asking. Logs that changed since the last copy stay on the card.
 
 ### 3. Viewer
 
-The Viewer shows the chosen flight. At the top are the model, date, radio, duration, maximum distance and altitude and the pack (click it for its cycles, wear and last use as Lipo Nanny keeps them now), with buttons for the previous and next flight. Add tags with "+ Tag" and a note with "Note"; both show up in the list and work with its search and filter.
+The Viewer shows the chosen flight. At the top are the model, date and radio, the flight time, maximum distance and altitude, lowest voltage and mAh used, and the pack (click it for its cycles, wear and last use as Lipo Nanny keeps them now), with buttons for the previous and next flight. Add tags with "+ Tag" and a note with "Note"; both show up in the list and work with its search and filter. Above the map, a bar lists the hints of the flight with their time; click one to jump there.
 
 **Map**: "2D" and "3D" switch the view; in 3D the path hangs at its altitude above the start point, with lines down to the ground. "Color by" colors the path by flight mode, altitude, speed, link quality or battery, or green, yellow and red like on the radio by the warning level of Lipo Nanny, Link Sentinel or the worst of all ("All warnings"), with the legend below. The start is marked with a ring, the end with a square. Point at the path to see the time and value there (the values and charts follow), click it to jump there. Zoom, "Show whole flight", "Follow the model" (keeps the model in the middle while playing; moving the map by hand turns it off) and the map type (street map or satellite) are at the top right.
+
+![The same flight in 3D, the path at its altitude with lines down to the ground and the copter model at the bottom right](docs/screenshots/viewer-3d.png)
 
 **Timeline**: at the bottom of the map. A flight opens at arming, so Play starts the flight right away (from the moment shown, at 1× to 30× speed). All times in the Viewer count from arming ("+2:25"), the time before it with a minus ("−0:40"). The marks for takeoff and landing show where the flight is. Marks above the slider show events (red for link lost and failsafe), orange diamonds show hints; marks too close together show as one with a count. Click one to jump there.
 
@@ -90,9 +96,15 @@ The Viewer shows the chosen flight. At the top are the model, date, radio, durat
 
 **Charts**: below the map. "Values" chooses which values to show; each gets its own strip with its own scale. Moving the mouse over the charts moves the map, the values and the sticks along. Click to jump to that moment. The time axis has marks counted from arming, and dashed lines show where events and hints are. To zoom, drag across the overview at the bottom; a double click shows the whole flight again. With "Measure (A/B)" on, click twice to set A and B and see the time between them and how much each value changed.
 
+![The charts of altitude, speed, link quality and voltage, with marks for events and hints and the overview below](docs/screenshots/charts.png)
+
 **Value vs value**: one value against another, one dot per log line in the air, with a trend line. Three pairs are ready to pick (throttle vs current, distance vs link quality, throttle vs climb rate), or choose any two values.
 
+![Throttle against current, one dot per log line, with the trend line](docs/screenshots/scatter.png)
+
 **Analysis**: a summary (top speed, lowest voltage, mAh used, worst link quality, fewest satellites, each with its time), then the events and hints of the flight as lists; click one to jump there (a hint also zooms the charts to 30 s before and after it). For a receiver with two antennas (`1RSS` and `2RSS` in the log), "Antennas" shows how much weaker one antenna is depending on where the radio is as seen from the model (front, right, back, left, from the heading in the log), and says what to check. Logs without a heading use the direction from the start instead.
+
+![The Analysis tab with the summary, the events and the hints of the flight](docs/screenshots/analysis.png)
 
 ### 4. Export
 
