@@ -15,6 +15,8 @@ export interface FlightInfo extends Flight {
   home?: { lat: number; lon: number };
   maxDistance?: number; // m from home
   maxAlt?: number; // in the log's unit
+  minVolt?: number; // lowest battery voltage in the air, V
+  usedCapa?: number; // mAh used as the flight controller counts it, the most it reached in the air
   hints: Hint[];
   pack?: { n: number } & Partial<PackInfo>; // from Lipo Nanny's sensor, with what its settings know of the pack
 }
@@ -57,6 +59,11 @@ function describe(f: Flight, n: number, samples: Sample[], minSats: number, hint
     }
     const alt = s.values.alt;
     if (alt !== undefined) info.maxAlt = Math.max(info.maxAlt ?? alt, alt);
+    if (s.t > end) continue;
+    const volt = s.values.volt;
+    if (volt !== undefined && volt > 0) info.minVolt = Math.min(info.minVolt ?? volt, volt);
+    const capa = s.values.capa;
+    if (capa !== undefined) info.usedCapa = Math.max(info.usedCapa ?? capa, capa);
   }
   return info;
 }

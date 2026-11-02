@@ -26,6 +26,18 @@ export const PAIRS: [string, string][] = [
 
 export const unitShown = (u: string | undefined) => (u ? (UNIT_SHOWN[u] ?? u) : '');
 
+// Pitch, roll and yaw in degrees as the attitude view shows them (pitch nose up positive, yaw 0 to 360°); without
+// it, any column in rad is only turned into degrees.
+const ATTITUDE: Record<string, 'pitch' | 'roll' | 'yaw'> = { Ptch: 'pitch', Roll: 'roll', Yaw: 'yaw' };
+const wrap = (deg: number) => ((deg % 360) + 360) % 360;
+function inDegrees(tr: TrackView, e: NonNullable<TrackView['extra']>[number]): (number | null)[] | undefined {
+  const a = ATTITUDE[e.name];
+  const att = a ? tr.attitude?.[a] : undefined;
+  if (att) return att;
+  if (e.unit !== 'rad') return undefined;
+  return e.values.map((v) => (v === null ? null : e.name === 'Yaw' ? wrap((v * 180) / Math.PI) : (v * 180) / Math.PI));
+}
+
 export function seriesOf(tr: TrackView, t: Texts): Series[] {
   const out: Series[] = [];
   for (const k of TRACK_VALUES) {
@@ -33,8 +45,9 @@ export function seriesOf(tr: TrackView, t: Texts): Series[] {
     if (values) out.push({ id: k, name: tr.names[k] ?? k, label: t.valueNames[k], unit: unitShown(tr.units[k]), digits: DIGITS[k] ?? 0, values });
   }
   for (const e of tr.extra ?? []) {
-    const unit = unitShown(e.unit);
-    out.push({ id: `log:${e.name}`, name: e.name, label: t.logNames[e.name as keyof Texts['logNames']] ?? e.name, unit, digits: unit === 'rad' ? 2 : 0, values: e.values });
+    const deg = inDegrees(tr, e);
+    const label = t.logNames[e.name as keyof Texts['logNames']] ?? e.name;
+    out.push({ id: `log:${e.name}`, name: e.name, label, unit: deg ? '°' : unitShown(e.unit), digits: 0, values: deg ?? e.values });
   }
   for (const k of STICKS) {
     const values = tr.sticks?.[k];
@@ -54,6 +67,30 @@ export function formatValue(s: Series, v: number, locale: string): string {
 export function formatDelta(s: Series, d: number, locale: string): string {
   const text = formatValue({ ...s, id: s.id === 'dist' ? 'delta' : s.id }, Math.abs(d), locale);
   return `${d < 0 ? '−' : '+'}${text}`;
+}
+
+const STEPS = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600]; // s between two marks of the time axis
+const TICK_GAP = 72; // px at least between two marks
+
+// Marks of the time axis, counted from takeoff: the smallest step that leaves room for the labels, at most 8.
+export function timeTicks(r: [number, number], takeoff: number, w: number): number[] {
+  const span = r[1] - r[0];
+  if (span <= 0 || w <= 0) return [];
+  const most = Math.max(1, Math.min(8, Math.floor(w / TICK_GAP)));
+  const step = STEPS.find((s) => span / s <= most) ?? STEPS.at(-1)!;
+  const out: number[] = [];
+  for (let k = Math.ceil((r[0] - takeoff) / step); takeoff + k * step <= r[1]; k++) out.push(takeoff + k * step);
+  return out;
+}
+
+// one color per strip, readable on light and dark
+export const STRIP_COLORS = ['#0ea5e9', '#8b5cf6', '#f97316', '#10b981', '#e11d48', '#ca8a04', '#2563eb', '#db2777'];
+// Colors for the chosen values: the ones they had, the first free one for new ones.
+export function paint(old: Record<string, string>, chosen: string[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const id of chosen) if (old[id]) out[id] = old[id];
+  for (const id of chosen) if (!out[id]) out[id] = STRIP_COLORS.find((c) => !Object.values(out).includes(c)) ?? STRIP_COLORS[Object.keys(out).length % STRIP_COLORS.length]!;
+  return out;
 }
 
 // Smallest and largest value, ignoring missing ones

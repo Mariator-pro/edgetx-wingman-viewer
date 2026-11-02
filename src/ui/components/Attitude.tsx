@@ -2,7 +2,7 @@ import { AmbientLight, COORDINATE_SYSTEM, Deck, DirectionalLight, LightingEffect
 import { LineLayer } from '@deck.gl/layers';
 import { SimpleMeshLayer } from '../meshLayer.ts';
 import { Button, Card, Dropdown } from '@heroui/react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AIRFRAMES, type Airframe } from '../../core/kinds.ts';
 import type { TrackView } from '../../server/api.ts';
 import { airframeMesh } from '../airframes.ts';
@@ -11,7 +11,7 @@ import { usePrefs } from '../usePrefs.ts';
 import { CubeIcon, MinusIcon } from './icons.tsx';
 
 // seen from the south and a little above, so the heading matches the map (north up)
-const VIEW = { target: [0, 0, -0.25] as [number, number, number], rotationOrbit: 0, rotationX: 22, zoom: 6.25 };
+const VIEW = { target: [0, 0, -0.25] as [number, number, number], rotationOrbit: 0, rotationX: 22, zoom: 5.7 };
 const GROUND = -1.15;
 // soft light all round, the sun from above behind the viewer
 const LIGHT = new LightingEffect({
@@ -25,12 +25,16 @@ const GRID = Array.from({ length: 7 }, (_, i) => (i - 3) * 0.6).flatMap((v) => [
 
 type Props = { track: TrackView; time: number; airframe?: Airframe; onAirframe: (a: Airframe | null) => void };
 
-// Folds into a round button, so it leaves the map free; the app keeps the choice.
-export function Attitude(props: Props) {
+// Folds into a round button, so it leaves the map free; the app keeps the choice. On a narrow map it starts folded
+// whatever the choice, and opening it there holds only while the flight is shown.
+export function Attitude(props: Props & { narrow: boolean }) {
   const { t, attitudeShown, setAttitudeShown } = usePrefs();
-  if (attitudeShown) return <AttitudeCard {...props} onHide={() => setAttitudeShown(false)} />;
+  const [opened, setOpened] = useState(false);
+  const shown = props.narrow ? opened : attitudeShown;
+  const show = (on: boolean) => (props.narrow ? setOpened(on) : setAttitudeShown(on));
+  if (shown) return <AttitudeCard {...props} onHide={() => show(false)} />;
   return (
-    <Button isIconOnly variant="tertiary" className="rounded-full shadow-sm" aria-label={t.showAttitude} onPress={() => setAttitudeShown(true)}>
+    <Button isIconOnly variant="tertiary" className="rounded-full shadow-sm" aria-label={t.showAttitude} onPress={() => show(true)}>
       <CubeIcon size={18} />
     </Button>
   );
@@ -79,9 +83,8 @@ function AttitudeCard(props: Props & { onHide: () => void }) {
 
   const names: Record<Airframe | 'arrow', string> = t.airframeNames;
   return (
-    <Card className="w-60 gap-0 overflow-hidden p-0" aria-label={t.attitude}>
-      <div className="flex items-center gap-1 px-3 pt-2">
-        <span className="mr-auto text-xs font-semibold">{t.attitude}</span>
+    <Card className="w-40 gap-0 overflow-hidden p-0" aria-label={t.attitude}>
+      <div className="flex items-center justify-between gap-1 px-2 pt-1.5">
         <Dropdown>
           <Button size="sm" variant="ghost" className="h-6 min-w-0 px-2 text-xs" aria-label={t.airframe}>
             {names[kind]}
@@ -109,10 +112,19 @@ function AttitudeCard(props: Props & { onHide: () => void }) {
           <MinusIcon size={14} />
         </Button>
       </div>
-      <div ref={box} className="relative h-40" />
-      <div className="whitespace-nowrap px-3 pb-2 text-[11px] tabular-nums text-muted">
-        {att ? t.attitudeValues(Math.round(att.pitch), Math.round(att.roll), Math.round(att.yaw)) : t.noTelemetry}
-      </div>
+      <div ref={box} className="relative h-28" />
+      {att ? (
+        <dl className="m-0 grid grid-cols-3 px-2 pb-2 text-center">
+          {[att.pitch, att.roll, att.yaw].map((v, i) => (
+            <div key={i}>
+              <dt className="text-[10px] text-muted">{t.attitudeNames[i]}</dt>
+              <dd className="m-0 text-xs font-semibold tabular-nums">{Math.round(v)}°</dd>
+            </div>
+          ))}
+        </dl>
+      ) : (
+        <p className="m-0 px-2 pb-2 text-center text-[11px] text-muted">{t.noTelemetry}</p>
+      )}
     </Card>
   );
 }

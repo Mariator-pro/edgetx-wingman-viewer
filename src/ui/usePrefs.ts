@@ -15,6 +15,8 @@ export interface Prefs {
   setSticks: (m: StickMode) => void;
   attitudeShown: boolean; // the attitude view on the map, or only its button
   setAttitudeShown: (shown: boolean) => void;
+  moreShown: boolean; // the other values of the log in the values bar, open or folded
+  setMoreShown: (shown: boolean) => void;
   list: ListPrefs; // filters, order and columns of the list of flights
   setList: (l: ListPrefs) => void;
 }

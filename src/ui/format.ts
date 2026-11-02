@@ -51,8 +51,8 @@ export const radioLabel = (t: Texts, f: FlightView) => (f.board === 'imported' ?
 export const flightLabel = (t: Texts, f: FlightView) =>
   f.hasDate ? `${f.model}, ${day(f.start, t.locale)} ${time(f.start, t.locale)}` : `${f.model}, ${f.file}`;
 
-// Seconds as "04:46"
-export const clockText = (s: number) => {
-  const v = Math.max(0, Math.floor(s));
-  return `${String(Math.floor(v / 60)).padStart(2, '0')}:${String(v % 60).padStart(2, '0')}`;
-};
+// Seconds of the track as time from takeoff (arming), the one time the Viewer shows: "+1:23", before it "−0:12"
+export function fromTakeoff(s: number, takeoff: number): string {
+  const d = Math.floor(s - takeoff + 1e-6); // whole seconds, so a mark at a whole step shows it exactly
+  return `${d < 0 ? '−' : '+'}${duration(Math.abs(d) * 1000)}`;
+}

@@ -187,6 +187,9 @@ describe('server', () => {
     expect((await post('/api/prefs', { attitude: 'hidden' })).status).toBe(200);
     expect(JSON.parse(await readFile(join(dir, 'data', 'settings.json'), 'utf8')).ui.attitude).toBe('hidden');
     expect((await post('/api/prefs', { attitude: 'open' })).status).toBe(400);
+    expect((await post('/api/prefs', { more: 'shown' })).status).toBe(200);
+    expect(JSON.parse(await readFile(join(dir, 'data', 'settings.json'), 'utf8')).ui.more).toBe('shown');
+    expect((await post('/api/prefs', { more: 'all' })).status).toBe(400);
     expect((await post('/api/prefs', { theme: 'pink' })).status).toBe(400);
     expect((await post('/api/prefs', { sticks: 5 })).status).toBe(400);
     expect((await api('/api/prefs', { method: 'POST', body: '{x' })).status).toBe(400);

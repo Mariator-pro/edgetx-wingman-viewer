@@ -30,6 +30,7 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
   );
   const [sticks, setSticks] = useState<StickMode>(isStickMode(initial.sticks) ? initial.sticks : 2);
   const [attitudeShown, setAttitudeShown] = useState(initial.attitude !== 'hidden');
+  const [moreShown, setMoreShown] = useState(initial.more === 'shown');
   const [list, setList] = useState(initial.list ?? {});
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -53,12 +54,16 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
     setAttitudeShown(shown);
     save({ attitude: shown ? 'shown' : 'hidden' });
   };
+  const chooseMore = (shown: boolean) => {
+    setMoreShown(shown);
+    save({ more: shown ? 'shown' : 'hidden' });
+  };
   const chooseList = (l: ListPrefs) => {
     if (JSON.stringify(l) === JSON.stringify(list)) return;
     setList(l);
     save({ list: l });
   };
   return (
-    <PrefsContext value={{ t: TEXTS[lang], lang, setLang: chooseLang, theme, setTheme: chooseTheme, sticks, setSticks: chooseSticks, attitudeShown, setAttitudeShown: chooseAttitude, list, setList: chooseList }}>{children}</PrefsContext>
+    <PrefsContext value={{ t: TEXTS[lang], lang, setLang: chooseLang, theme, setTheme: chooseTheme, sticks, setSticks: chooseSticks, attitudeShown, setAttitudeShown: chooseAttitude, moreShown, setMoreShown: chooseMore, list, setList: chooseList }}>{children}</PrefsContext>
   );
 }

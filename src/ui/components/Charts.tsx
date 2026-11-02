@@ -1,12 +1,14 @@
 import { Button, Dropdown, Label, Switch } from '@heroui/react';
 import { useEffect, useState } from 'react';
 import type { TrackView } from '../../server/api.ts';
-import { extent, formatDelta, formatValue, type Series } from '../series.ts';
+import { extent, formatDelta, formatValue, STRIP_COLORS, timeTicks, type Series } from '../series.ts';
 import { rowAt } from '../track.ts';
 import { usePrefs } from '../usePrefs.ts';
 import { useWidth } from '../useWidth.ts';
 import { SlidersIcon } from './icons.tsx';
-import { clockText } from '../format.ts';
+import { fromTakeoff } from '../format.ts';
+import { eventTone, HINT_TONE, type Mark } from '../marks.ts';
+import { MarkRow } from './TimelineMark.tsx';
 
 export type Range = [number, number];
 export interface Marks {
@@ -14,8 +16,6 @@ export interface Marks {
   b?: number;
 }
 
-// one color per strip, readable on light and dark
-const STRIP_COLORS = ['#0ea5e9', '#8b5cf6', '#f97316', '#10b981', '#e11d48', '#ca8a04', '#2563eb', '#db2777'];
 const STRIP_H = 72;
 // fixed room for name and value on the left, scale on the right; the lines start after it
 const LABEL_W = 120;
@@ -23,14 +23,6 @@ const AXIS_W = 72;
 const OVERVIEW_H = 44;
 const PAD = 8;
 const FOLD_MS = 200; // a strip opens and closes this fast, so the page grows and shrinks smoothly
-
-// Colors for the chosen values: the ones they had, the first free one for new ones.
-function paint(old: Record<string, string>, chosen: string[]): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const id of chosen) if (old[id]) out[id] = old[id];
-  for (const id of chosen) if (!out[id]) out[id] = STRIP_COLORS.find((c) => !Object.values(out).includes(c)) ?? STRIP_COLORS[Object.keys(out).length % STRIP_COLORS.length]!;
-  return out;
-}
 
 // The line of one value between r0 and r1 as an SVG path. Per pixel column only the first, smallest, largest
 // and last value, so long logs draw as fast as short ones; missing values break the line.
@@ -87,6 +79,7 @@ export function Charts(props: {
   series: Series[];
   chosen: string[];
   onChoose: (ids: string[]) => void;
+  colors: Record<string, string>; // per value shown, kept while it is shown (also by the values bar)
   time: number;
   hover?: number;
   onHover: (t: number | undefined) => void;
@@ -104,8 +97,7 @@ export function Charts(props: {
   const [drag, setDrag] = useState<{ from: number; to: number }>();
   const [tipY, setTipY] = useState(0); // pointer height over the charts, for the tooltip
   const shown = chosen.map((id) => series.find((s) => s.id === id)).filter((s): s is Series => !!s);
-  // each value keeps its color while it is shown
-  const [colors, setColors] = useState<Record<string, string>>(() => paint({}, chosen));
+  const colors = props.colors;
   // strips just taken away stay a moment while they close; new ones open. Worked out while rendering, so a
   // strip taken away never disappears before it closes.
   const [leaving, setLeaving] = useState<string[]>([]);
@@ -116,7 +108,6 @@ export function Charts(props: {
     setBefore(chosen);
     setLeaving([...leaving.filter((id) => !chosen.includes(id)), ...gone]);
     setOpening(chosen.filter((id) => !before.includes(id)));
-    setColors(paint(colors, [...chosen, ...gone]));
   }
   useEffect(() => {
     if (leaving.length === 0 && opening.length === 0) return;
@@ -163,9 +154,39 @@ export function Charts(props: {
   const overview = shown[0] ?? series.find((s) => s.id === 'alt');
   const overviewExtent = overview ? extent(overview.values) : undefined;
 
+  const ticks = timeTicks(range, track.takeoff, w);
+  const inRange = (s: number) => s >= range[0] && s <= range[1];
+  // events and hints in the charts, as on the timeline
+  const lines: Mark[] = [
+    ...track.events.map((e) => ({ t: e.t, name: t.eventNames[e.kind], tone: eventTone(e.kind), hint: false })),
+    ...track.hints.map((h) => ({ t: h.t, name: t.hintNames[h.kind], tone: HINT_TONE, hint: true })),
+  ].filter((l) => inRange(l.t));
+  const height = shown.length * STRIP_H;
+
   return (
     <div className="flex flex-col gap-3">
+      {w > 0 && shown.length > 0 && lines.length > 0 && (
+        <MarkRow
+          className="relative -mb-2 h-4"
+          style={{ marginLeft: LABEL_W, marginRight: AXIS_W }}
+          marks={lines}
+          at={(s) => (s - range[0]) / (range[1] - range[0] || 1)}
+          takeoff={track.takeoff}
+          onPick={props.onSeek}
+        />
+      )}
       <div ref={boxRef} className="relative select-none">
+        {w > 0 && shown.length > 0 && (
+          // behind the lines: the time marks and the events and hints
+          <svg width={w} height={height} className="pointer-events-none absolute top-0" style={{ left: LABEL_W }} aria-hidden="true">
+            {ticks.map((s) => (
+              <line key={s} x1={x(s)} x2={x(s)} y1={0} y2={height} className="stroke-separator" strokeWidth={1} />
+            ))}
+            {lines.map((l) => (
+              <line key={`${l.hint ? 'h' : 'e'}${l.t}${l.name}`} x1={x(l.t)} x2={x(l.t)} y1={0} y2={height} className={l.tone.stroke} strokeWidth={1} strokeDasharray="3 3" strokeOpacity={0.8} />
+            ))}
+          </svg>
+        )}
         {w > 0 && shown.length === 0 && <p className="m-0 py-6 text-center text-sm text-muted">{t.noChartValues}</p>}
         {w > 0 &&
           strips.map((s) => {
@@ -239,7 +260,7 @@ export function Charts(props: {
               ...(x(hover) > w - 200 ? { right: AXIS_W + w - x(hover) + 12 } : { left: LABEL_W + x(hover) + 12 }),
             }}
           >
-            <span className="font-semibold tabular-nums">{clockText(hover)}</span>
+            <span className="font-semibold tabular-nums">{fromTakeoff(hover, track.takeoff)}</span>
             {shown.map((s) => {
               const v = s.values[row];
               return (
@@ -254,9 +275,12 @@ export function Charts(props: {
         )}
       </div>
       {delta && <p className="m-0 rounded-lg bg-surface-secondary px-3 py-2 text-sm tabular-nums">{delta}</p>}
-      <div className="flex justify-between text-[10px] tabular-nums text-muted" style={{ marginLeft: LABEL_W, marginRight: AXIS_W }}>
-        <span>{clockText(range[0])}</span>
-        <span>{clockText(range[1])}</span>
+      <div className="relative h-3 text-[10px] tabular-nums text-muted" style={{ marginLeft: LABEL_W, marginRight: AXIS_W }} aria-hidden="true">
+        {ticks.map((s) => (
+          <span key={s} className="absolute top-0 -translate-x-1/2 whitespace-nowrap" style={{ left: x(s) }}>
+            {fromTakeoff(s, track.takeoff)}
+          </span>
+        ))}
       </div>
 
       {w > 0 && overview && overviewExtent && (
@@ -269,7 +293,7 @@ export function Charts(props: {
             aria-valuemin={0}
             aria-valuemax={Math.round(track.duration)}
             aria-valuenow={Math.round(range[0])}
-            aria-valuetext={`${clockText(range[0])} – ${clockText(range[1])}`}
+            aria-valuetext={`${fromTakeoff(range[0], track.takeoff)} – ${fromTakeoff(range[1], track.takeoff)}`}
             onPointerDown={(e) => {
               (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
               const s = timeOf(e, full);

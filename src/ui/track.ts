@@ -43,6 +43,48 @@ export function positionAt(tr: TrackView, t: number): PathPoint | undefined {
   return last;
 }
 
+// The point of a path segment nearest to a spot on the screen, by where each point is drawn.
+export function nearestPoint(seg: PathPoint[], project: (p: PathPoint) => [number, number], x: number, y: number): PathPoint | undefined {
+  let best: PathPoint | undefined;
+  let bestD = Infinity;
+  for (const p of seg) {
+    const [px, py] = project(p);
+    const d = (px - x) ** 2 + (py - y) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = p;
+    }
+  }
+  return best;
+}
+
+// The extremes of a flight between takeoff and landing, each with when it happened: top speed, lowest voltage,
+// mAh used, worst link quality, fewest satellites; only what the log has.
+export const SUMMARY = [
+  ['gspd', 'max'],
+  ['volt', 'min'],
+  ['capa', 'max'],
+  ['lq', 'min'],
+  ['sats', 'min'],
+] as const;
+export type SummaryValue = (typeof SUMMARY)[number][0];
+export function summaryOf(tr: TrackView): { k: SummaryValue; v: number; t: number }[] {
+  const out: { k: SummaryValue; v: number; t: number }[] = [];
+  for (const [k, way] of SUMMARY) {
+    const col = tr.rows.values[k];
+    if (!col) continue;
+    let best: { k: SummaryValue; v: number; t: number } | undefined;
+    for (let r = 0; r < col.length; r++) {
+      const v = col[r];
+      const t = tr.rows.t[r]!;
+      if (v == null || t < tr.takeoff || t > tr.landing || (k === 'volt' && v <= 0)) continue;
+      if (!best || (way === 'max' ? v > best.v : v < best.v)) best = { k, v, t };
+    }
+    if (best) out.push(best);
+  }
+  return out;
+}
+
 // The path flown up to time t, ending exactly at the model.
 export function flownAt(tr: TrackView, t: number): PathPoint[][] {
   const out: PathPoint[][] = [];

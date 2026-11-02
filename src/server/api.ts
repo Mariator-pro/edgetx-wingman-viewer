@@ -61,6 +61,8 @@ export interface FlightView {
   maxDistance?: number; // m
   maxAlt?: number; // in altUnit
   altUnit?: string;
+  minVolt?: number; // V, lowest in the air
+  usedCapa?: number; // mAh
   hints: number;
   pack?: PackView;
   note?: string;
@@ -115,6 +117,7 @@ export interface PrefsView {
   theme?: 'light' | 'dark';
   sticks?: StickMode; // stick mode for logs without the radio's settings
   attitude?: 'shown' | 'hidden'; // the attitude view on the map, or only its button
+  more?: 'shown' | 'hidden'; // the other values of the log in the values bar, open or folded
   list?: ListPrefs; // filters, order and hidden columns of the list of flights
 }
 export const PREFS_META = 'wingman-viewer-prefs';

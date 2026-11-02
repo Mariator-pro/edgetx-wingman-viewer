@@ -80,12 +80,19 @@ export function ViewerPage(props: {
     setTagOpen(false);
   };
   const subtitle = f.sample ? t.sampleText : [f.hasDate ? `${day(f.start, t.locale)}, ${time(f.start, t.locale)}` : f.file, radioLabel(t, f)].join(' · ');
-  const facts = [t.flightDuration(duration(f.duration)), t.maxDistance(distance(f.maxDistance, t.locale)), t.maxAltitude(altitude(f.maxAlt, f.altUnit))];
+  const facts = [
+    t.flightDuration(duration(f.duration)),
+    t.maxDistance(distance(f.maxDistance, t.locale)),
+    t.maxAltitude(altitude(f.maxAlt, f.altUnit)),
+    ...(f.minVolt !== undefined ? [t.minVoltage(`${f.minVolt.toLocaleString(t.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V`)] : []),
+    ...(f.usedCapa !== undefined ? [t.usedCapacity(`${f.usedCapa.toLocaleString(t.locale)} mAh`)] : []),
+  ];
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-2.5">
+      {/* the buttons stay at the top right; title, chips and tags wrap beside them */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-2.5">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h1 className="m-0 text-2xl font-bold tracking-tight">{f.model}</h1>
             <span className="text-sm text-muted">{subtitle}</span>
@@ -137,7 +144,7 @@ export function ViewerPage(props: {
           </div>
           {f.note && <p className="m-0 max-w-prose whitespace-pre-wrap text-sm text-muted">{f.note}</p>}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {!f.sample && (
             <>
               <Button isIconOnly variant="outline" aria-label={t.prevFlight} isDisabled={!f.prev} onPress={() => f.prev && onOpen(f.prev)}>
@@ -242,7 +249,7 @@ export function ViewerPage(props: {
         </Alert>
       )}
 
-      <Suspense fallback={<div className="h-[480px] animate-pulse rounded-3xl bg-surface-secondary" />}>
+      <Suspense fallback={<div className="h-[clamp(520px,calc(100vh_-_280px),820px)] animate-pulse rounded-3xl bg-surface-secondary" />}>
         <FlightPlayer flightKey={f.key} />
       </Suspense>
 

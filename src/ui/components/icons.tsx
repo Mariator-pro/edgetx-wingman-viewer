@@ -133,6 +133,13 @@ export const FitIcon = (p: IconProps) => (
     <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
   </Svg>
 );
+export const FollowIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="6" />
+    <circle cx="12" cy="12" r="1.5" />
+    <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+  </Svg>
+);
 export const CubeIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M12 3 4 7.5v9L12 21l8-4.5v-9L12 3Z" />

@@ -191,6 +191,8 @@ export function flightView(f: ListedFlight): FlightView {
     ...(flight.maxDistance !== undefined ? { maxDistance: Math.round(flight.maxDistance) } : {}),
     ...(flight.maxAlt !== undefined ? { maxAlt: flight.maxAlt } : {}),
     ...(log.altUnit ? { altUnit: log.altUnit } : {}),
+    ...(flight.minVolt !== undefined ? { minVolt: flight.minVolt } : {}),
+    ...(flight.usedCapa !== undefined ? { usedCapa: Math.round(flight.usedCapa) } : {}),
     hints: flight.hints.length,
     ...(flight.pack ? { pack: flight.pack } : {}),
     ...(f.marks.note ? { note: f.marks.note } : {}),
@@ -426,17 +428,18 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
       );
     },
     'POST /api/prefs': async (req) => {
-      const { lang, theme, sticks, attitude, list } = await body<PrefsView>(req);
+      const { lang, theme, sticks, attitude, more, list } = await body<PrefsView>(req);
       if (
         (lang !== undefined && !/^[a-z]{2}$/.test(lang)) ||
         (theme !== undefined && theme !== 'light' && theme !== 'dark') ||
         (sticks !== undefined && !isStickMode(sticks)) ||
         (attitude !== undefined && attitude !== 'shown' && attitude !== 'hidden') ||
+        (more !== undefined && more !== 'shown' && more !== 'hidden') ||
         (list !== undefined && (typeof list !== 'object' || list === null || Array.isArray(list)))
       ) {
         throw new HttpError(400, 'invalidRequest', { what: 'prefs' });
       }
-      s.ui = { ...s.ui, ...(lang ? { lang } : {}), ...(theme ? { theme } : {}), ...(sticks ? { sticks } : {}), ...(attitude ? { attitude } : {}), ...(list ? { list: listPrefs(list) } : {}) };
+      s.ui = { ...s.ui, ...(lang ? { lang } : {}), ...(theme ? { theme } : {}), ...(sticks ? { sticks } : {}), ...(attitude ? { attitude } : {}), ...(more ? { more } : {}), ...(list ? { list: listPrefs(list) } : {}) };
       await saveSettings(p.settings, s);
     },
   };

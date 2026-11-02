@@ -25,6 +25,10 @@ describe('simulator: two flights in one log (ELRS, Betaflight, sensors of the co
     expect(f!.end - f!.start).toBeGreaterThan(70000);
     expect(f!.maxDistance).toBeGreaterThan(550);
     expect(new Set(kinds(f!.hints))).toEqual(new Set(['gps-lost', 'max-distance', 'link-warning', 'link-critical', 'battery-warning', 'battery-critical']));
+    // the simulated 6S pack sags in the air, below full (25.2 V); mAh counted
+    expect(f!.minVolt).toBeGreaterThan(18);
+    expect(f!.minVolt).toBeLessThan(25.2);
+    expect(f!.usedCapa).toBeGreaterThan(0);
   });
 
   it('second flight: out 250 m, crash, disarmed far out', async () => {

@@ -76,7 +76,7 @@ export function listPrefs(v: unknown): ListPrefs {
 }
 
 export interface Settings {
-  ui?: { lang?: string; theme?: 'light' | 'dark'; sticks?: StickMode; attitude?: 'shown' | 'hidden'; list?: ListPrefs }; // interface language, theme, stick mode (for logs without the radio's settings) and the attitude view on the map, as last chosen
+  ui?: { lang?: string; theme?: 'light' | 'dark'; sticks?: StickMode; attitude?: 'shown' | 'hidden'; more?: 'shown' | 'hidden'; list?: ListPrefs }; // interface language, theme, stick mode (for logs without the radio's settings), the attitude view on the map and the other values of the log in the values bar, as last chosen
   map?: MapSettings;
   lastSync?: string; // when logs were last copied from an SD card
 }
@@ -92,6 +92,7 @@ export async function loadSettings(file: string): Promise<Settings> {
       ...(ui.theme === 'light' || ui.theme === 'dark' ? { theme: ui.theme } : {}),
       ...(isStickMode(ui.sticks) ? { sticks: ui.sticks } : {}),
       ...(ui.attitude === 'shown' || ui.attitude === 'hidden' ? { attitude: ui.attitude } : {}),
+      ...(ui.more === 'shown' || ui.more === 'hidden' ? { more: ui.more } : {}),
       ...(isObject(ui.list) ? { list: listPrefs(ui.list) } : {}),
     },
     map: {

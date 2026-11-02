@@ -1,12 +1,13 @@
+import type { PickingInfo } from '@deck.gl/core';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { IconLayer, LineLayer, PathLayer } from '@deck.gl/layers';
 import { AttributionControl, Map as MapLibre, setWorkerUrl, type IControl, type StyleSpecification } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PathPoint } from '../../core/kinds.ts';
 import type { MapSettingsView, TrackView } from '../../server/api.ts';
-import { flownAt, positionAt, type Coloring } from '../track.ts';
+import { flownAt, nearestPoint, positionAt, type Coloring } from '../track.ts';
 
 // MapLibre's worker is a file of its own, built with the page and loaded from the app itself
 setWorkerUrl(workerUrl);
@@ -23,7 +24,7 @@ const FUTURE_ALPHA = 64; // the part still to come: the same colors, pale
 const STEM: [number, number, number, number] = [90, 100, 97, 90];
 const MAX_STEMS = 400;
 // room for the controls on the map: legend at the top left, timeline at the bottom, the attitude view at the right
-const fit = (roomRight: boolean) => ({ padding: { top: 150, bottom: 130, left: 60, right: roomRight ? 280 : 80 }, maxZoom: 18 });
+const fit = (roomRight: boolean) => ({ padding: { top: 150, bottom: 130, left: 60, right: roomRight ? 200 : 80 }, maxZoom: 18 });
 const camera = (view: View) => (view === '3d' ? { pitch: 60, bearing: -20 } : { pitch: 0, bearing: 0 });
 const motion = () => (matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 800);
 
@@ -103,6 +104,11 @@ export function FlightMap(props: {
   onMap: (m: MapLibre | null) => void; // for the zoom buttons
   roomRight: boolean; // the attitude view covers the lower right
   wholeFlight: number; // counts the presses of "Show whole flight"
+  follow?: number; // the time whose model the map keeps in the middle; undefined: the map stays
+  onFollowOff: () => void; // the map was moved by hand
+  onPoint: (t: number | undefined) => void; // pointing at the path: the time there, undefined when off it
+  onPick: (t: number) => void; // a click on the path
+  describe: (p: PathPoint) => string; // the tooltip at the path, e.g. "+1:31 · 84 m"
 }) {
   const { track, time, view, base, colors, settings, label, onSatelliteError, onMap } = props;
   const roomRight = useRef(props.roomRight);
@@ -111,12 +117,39 @@ export function FlightMap(props: {
   const overlay = useRef<MapboxOverlay>(null);
   const onError = useRef(onSatelliteError);
   const onMapRef = useRef(onMap);
+  const onFollowOff = useRef(props.onFollowOff);
   useEffect(() => {
     onError.current = onSatelliteError;
     onMapRef.current = onMap;
     roomRight.current = props.roomRight;
+    onFollowOff.current = props.onFollowOff;
   });
   const atlas = useMemo(() => iconAtlas(), []);
+  const [tip, setTip] = useState<{ x: number; y: number; text: string }>();
+  // the point of the path under the pointer: deck.gl finds the segment, the nearest of its points gives the time
+  const pointAt = (info: PickingInfo): PathPoint | undefined => {
+    const seg = info.layer?.id === 'future' ? (info.object as PathPoint[] | undefined) : undefined;
+    const vp = info.viewport;
+    if (!seg || !vp) return undefined;
+    return nearestPoint(seg, (p) => vp.project([p[1], p[2], view === '3d' ? p[3] : 0]) as [number, number], info.x, info.y);
+  };
+  const pointing = useRef(false);
+  const onHover = (info: PickingInfo) => {
+    const p = pointAt(info);
+    const canvas = map.current?.getCanvas();
+    if (canvas) canvas.style.cursor = p ? 'pointer' : '';
+    setTip(p ? { x: info.x, y: info.y, text: props.describe(p) } : undefined);
+    if (p || pointing.current) props.onPoint(p?.[0]);
+    pointing.current = !!p;
+  };
+  const onClick = (info: PickingInfo) => {
+    const p = pointAt(info);
+    if (p) props.onPick(p[0]);
+  };
+  const handlers = useRef({ onHover, onClick });
+  useEffect(() => {
+    handlers.current = { onHover, onClick };
+  });
 
   useEffect(() => {
     const b = bounds(track);
@@ -128,13 +161,21 @@ export function FlightMap(props: {
       attributionControl: false,
     });
     m.addControl(new AttributionControl({ compact: false }), 'bottom-right');
-    const o = new MapboxOverlay({ interleaved: false, layers: [] });
+    const o = new MapboxOverlay({
+      interleaved: false,
+      layers: [],
+      pickingRadius: 6, // the path is only 4 px wide
+      onHover: (info) => handlers.current.onHover(info),
+      onClick: (info) => handlers.current.onClick(info),
+    });
     m.addControl(o as unknown as IControl);
     // the box has its final size only once the page is laid out
     m.once('load', () => {
       m.resize();
       if (b) m.fitBounds(b, { ...fit(roomRight.current), duration: 0 });
     });
+    // moving the map by hand ends following, so the map doesn't pull against the hand
+    m.on('dragstart', () => onFollowOff.current());
     let refused = false;
     m.on('error', (e) => {
       if ((e as { sourceId?: string }).sourceId === 'satellite' && !refused) {
@@ -179,6 +220,14 @@ export function FlightMap(props: {
     else m.once('load', apply);
   }, [base, track, settings]);
 
+  // following: the model stays in the middle, zoom, tilt and turn as they are
+  useEffect(() => {
+    const m = map.current;
+    if (!m || props.follow === undefined) return;
+    const p = positionAt(track, props.follow);
+    if (p) m.jumpTo({ center: [p[1], p[2]] });
+  }, [props.follow, track]);
+
   // stems from the ground to the path in 3D, at the fixes, at most a few hundred
   const stems = useMemo(() => {
     const pts = track.path.flat();
@@ -219,6 +268,7 @@ export function FlightMap(props: {
         new PathLayer<PathPoint[]>({
           id: 'future',
           data: track.path,
+          pickable: true,
           getPath: (seg) => seg.map(pos),
           getColor: (seg) => seg.map((p): [number, number, number, number] => [...colors.row(p[5]), FUTURE_ALPHA]),
           getWidth: 4,
@@ -270,5 +320,17 @@ export function FlightMap(props: {
     });
   }, [track, settings, time, view, colors, stems, atlas]);
 
-  return <div ref={box} role="region" aria-label={label} className="h-full min-h-[360px] w-full" />;
+  return (
+    <div className="relative h-full min-h-[360px] w-full">
+      <div ref={box} role="region" aria-label={label} className="h-full w-full" />
+      {tip && (
+        <div
+          className="pointer-events-none absolute z-20 -translate-x-1/2 whitespace-nowrap rounded-lg bg-surface px-2 py-1 text-xs font-medium tabular-nums shadow-md ring-1 ring-separator"
+          style={{ left: tip.x, top: tip.y - 36 }}
+        >
+          {tip.text}
+        </div>
+      )}
+    </div>
+  );
 }
