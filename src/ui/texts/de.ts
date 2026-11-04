@@ -224,10 +224,10 @@ export const de: Texts = {
   stickModeShort: (m) => `Mode ${m}`,
   stickNames: { rud: 'Seitenruder', ele: 'Höhenruder', thr: 'Gas', ail: 'Querruder' },
   logNames: {
-    RSNR: 'Signal-Rausch-Abstand',
+    RSNR: 'Rauschabstand',
     TRSS: 'Signal am Sender',
     TQly: 'Link-Qualität am Sender',
-    TSNR: 'Signal-Rausch-Abstand am Sender',
+    TSNR: 'Rauschabstand am Sender',
     TPWR: 'Sendeleistung',
     RFMD: 'Paketrate',
     ANT: 'Aktive Antenne',

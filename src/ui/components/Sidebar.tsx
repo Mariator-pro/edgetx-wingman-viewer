@@ -39,11 +39,13 @@ export function Sidebar(props: {
       className="dark flex flex-[1_1_240px] flex-col gap-6 bg-zinc-900 px-3.5 py-5 text-zinc-200 md:fixed md:inset-y-0 md:left-0 md:z-20 md:w-60 md:overflow-y-auto"
     >
       <div className="flex items-center gap-2.5 px-2">
-        <span className="flex size-[30px] items-center justify-center rounded-lg bg-accent text-white">
+        <span className="flex size-[30px] shrink-0 items-center justify-center rounded-lg bg-accent text-white">
           <PathIcon size={16} />
         </span>
-        <span className="font-semibold text-white">{t.appName}</span>
-        <span className="text-xs text-zinc-400">v{__APP_VERSION__}</span>
+        <span className="flex min-w-0 flex-col">
+          <span className="font-semibold whitespace-nowrap text-white">{t.appName}</span>
+          <span className="text-xs text-zinc-400">v{__APP_VERSION__}</span>
+        </span>
       </div>
 
       {appUpdate && (
@@ -150,7 +152,7 @@ export function Sidebar(props: {
         </div>
 
         <div className="flex flex-col gap-2 rounded-xl bg-zinc-800 p-3">
-          <span className="text-xs text-zinc-400">{state?.lastSync ? t.lastCopied(dateTime(state.lastSync, t.locale)) : t.notCopied}</span>
+          <span className="text-xs text-balance text-zinc-400">{state?.lastSync ? t.lastCopied(dateTime(state.lastSync, t.locale)) : t.notCopied}</span>
           <input
             ref={file}
             type="file"

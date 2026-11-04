@@ -19,13 +19,14 @@ export function AntennaRose({ rose }: { rose: Rose }) {
   const names = rose.basis === 'model' ? t.roseModel : t.roseCompass;
   const where = rose.basis === 'model' ? t.radioWhere : t.modelWhere;
   return (
-    <Card variant="secondary">
+    // Alone in a wide row it lays out sideways: the rose on the left, its result on the right.
+    <Card variant="secondary" className="@container min-w-0 flex-[1_1_340px]">
       <Card.Header>
         <Card.Title>{t.antennas}</Card.Title>
         <Card.Description>{rose.basis === 'model' ? t.antennasModel : t.antennasCompass}</Card.Description>
       </Card.Header>
-      <Card.Content className="gap-3">
-        <svg viewBox="0 0 300 222" className="mx-auto block w-full max-w-80" role="img" aria-label={roseResult(rose, t)}>
+      <Card.Content className="flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:gap-8">
+        <svg viewBox="0 0 300 222" className="mx-auto block w-full max-w-80 shrink-0 @2xl:mx-0" role="img" aria-label={roseResult(rose, t)}>
           <circle cx={CX} cy={CY} r={R} className="fill-surface-tertiary stroke-muted" strokeOpacity={0.3} />
           <circle cx={CX} cy={CY} r={R / 2} fill="none" className="stroke-muted" strokeOpacity={0.3} />
           {/* ring labels at the lower right, away from the direction names */}
@@ -71,15 +72,17 @@ export function AntennaRose({ rose }: { rose: Rose }) {
           </text>
           <circle cx={CX} cy={CY} r={3} className="fill-foreground" />
         </svg>
-        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted">
-          {[ANT1, ANT2].map((c, i) => (
-            <span key={c} className="flex items-center gap-1.5">
-              <i className="inline-block size-2.5 rounded-sm" style={{ background: c }} />
-              {t.antennaWeaker(i + 1)}
-            </span>
-          ))}
+        <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted @2xl:justify-start">
+            {[ANT1, ANT2].map((c, i) => (
+              <span key={c} className="flex items-center gap-1.5">
+                <i className="inline-block size-2.5 rounded-sm" style={{ background: c }} />
+                {t.antennaWeaker(i + 1)}
+              </span>
+            ))}
+          </div>
+          <p className="m-0 text-sm">{roseResult(rose, t)}</p>
         </div>
-        <p className="m-0 text-sm">{roseResult(rose, t)}</p>
       </Card.Content>
     </Card>
   );

@@ -2,7 +2,8 @@ import { Alert, Button, Chip, CloseButton, Dropdown, Input, Popover, Spinner, Te
 import { lazy, Suspense, useEffect, useState } from 'react';
 import type { ExportFormat, FlightDetailView, PackView } from '../../server/api.ts';
 import { get, post, tokenUrl } from '../api.ts';
-import { BatteryIcon, ChevronLeftIcon, ChevronRightIcon, DownloadIcon, MoreIcon, NoteIcon, PlusIcon } from '../components/icons.tsx';
+import { BADGE } from '../components/badge.ts';
+import { BatteryIcon, ChevronLeftIcon, ChevronRightIcon, DownloadIcon, MoreIcon, NoteIcon, PlusIcon, TagIcon } from '../components/icons.tsx';
 import { altitude, day, distance, duration, radioLabel, time } from '../format.ts';
 import { usePrefs } from '../usePrefs.ts';
 
@@ -90,57 +91,12 @@ export function ViewerPage(props: {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* the buttons stay at the top right; title, chips and tags wrap beside them */}
+      {/* the buttons stay at the top right; title and note wrap beside them */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-2.5">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h1 className="m-0 text-2xl font-bold tracking-tight">{f.model}</h1>
             <span className="text-sm text-muted">{subtitle}</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {f.sample && (
-              <Chip size="sm" variant="soft" color="accent" className={BADGE}>
-                {t.sampleFlight}
-              </Chip>
-            )}
-            {facts.map((x) => (
-              <Chip key={x} size="sm" variant="secondary" className={`${BADGE} tabular-nums`}>
-                {x}
-              </Chip>
-            ))}
-            {f.pack && <PackChip pack={f.pack} />}
-            {f.tags.map((x) => (
-              <Chip key={x} size="sm" variant="soft" color="accent" className={`${BADGE} pr-1`}>
-                {x}
-                <CloseButton aria-label={t.removeTag(x)} className="size-4" onPress={() => setTags(f.tags.filter((y) => y !== x))} />
-              </Chip>
-            ))}
-            {!f.sample && (
-              <Popover isOpen={tagOpen} onOpenChange={setTagOpen}>
-                <Button size="sm" variant="ghost" className="h-7 border border-dashed border-border px-2.5 text-xs">
-                  <PlusIcon size={12} />
-                  {t.tag}
-                </Button>
-                <Popover.Content placement="bottom start">
-                  <Popover.Dialog aria-label={t.addTag}>
-                    <form
-                      className="flex items-center gap-2"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        addTag();
-                      }}
-                    >
-                      <TextField variant="secondary" aria-label={t.addTag} value={tag} onChange={setTag} autoFocus>
-                        <Input placeholder={t.tagPlaceholder} maxLength={MAX_TAG} className="w-40" />
-                      </TextField>
-                      <Button type="submit" size="sm" isDisabled={!tag.trim()}>
-                        {t.addTag}
-                      </Button>
-                    </form>
-                  </Popover.Dialog>
-                </Popover.Content>
-              </Popover>
-            )}
           </div>
           {f.note && <p className="m-0 max-w-prose whitespace-pre-wrap text-sm text-muted">{f.note}</p>}
         </div>
@@ -249,6 +205,58 @@ export function ViewerPage(props: {
         </Alert>
       )}
 
+      {/* the flight at a glance: its facts, pack and tags */}
+      <Alert className="items-center" role="group" aria-label={t.tags}>
+        <Alert.Indicator>
+          <TagIcon size={16} />
+        </Alert.Indicator>
+        <Alert.Content className="flex-row flex-wrap items-center gap-1.5">
+          {f.sample && (
+            <Chip size="sm" variant="soft" color="accent" className={BADGE}>
+              {t.sampleFlight}
+            </Chip>
+          )}
+          {facts.map((x) => (
+            <Chip key={x} size="sm" variant="secondary" className={`${BADGE} tabular-nums`}>
+              {x}
+            </Chip>
+          ))}
+          {f.pack && <PackChip pack={f.pack} />}
+          {f.tags.map((x) => (
+            <Chip key={x} size="sm" variant="soft" color="accent" className={`${BADGE} pr-1`}>
+              {x}
+              <CloseButton aria-label={t.removeTag(x)} className="size-4" onPress={() => setTags(f.tags.filter((y) => y !== x))} />
+            </Chip>
+          ))}
+          {!f.sample && (
+            <Popover isOpen={tagOpen} onOpenChange={setTagOpen}>
+              <Button size="sm" variant="ghost" className="h-7 border border-dashed border-border px-2.5 text-xs">
+                <PlusIcon size={12} />
+                {t.tag}
+              </Button>
+              <Popover.Content placement="bottom start">
+                <Popover.Dialog aria-label={t.addTag}>
+                  <form
+                    className="flex items-center gap-2"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      addTag();
+                    }}
+                  >
+                    <TextField variant="secondary" aria-label={t.addTag} value={tag} onChange={setTag} autoFocus>
+                      <Input placeholder={t.tagPlaceholder} maxLength={MAX_TAG} className="w-40" />
+                    </TextField>
+                    <Button type="submit" size="sm" isDisabled={!tag.trim()}>
+                      {t.addTag}
+                    </Button>
+                  </form>
+                </Popover.Dialog>
+              </Popover.Content>
+            </Popover>
+          )}
+        </Alert.Content>
+      </Alert>
+
       <Suspense fallback={<div className="h-[clamp(520px,calc(100vh_-_280px),820px)] animate-pulse rounded-3xl bg-surface-secondary" />}>
         <FlightPlayer flightKey={f.key} />
       </Suspense>
@@ -257,9 +265,6 @@ export function ViewerPage(props: {
     </div>
   );
 }
-
-// Same height for every badge in the row, chips and buttons alike.
-const BADGE = 'h-7 px-2.5 text-xs';
 
 // The flight's pack; its details as Lipo Nanny keeps them now, not as they were at the flight.
 function PackChip({ pack }: { pack: PackView }) {

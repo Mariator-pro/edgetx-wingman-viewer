@@ -168,6 +168,13 @@ export const SlidersIcon = (p: IconProps) => (
   </Svg>
 );
 
+export const TagIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 3H5a2 2 0 0 0-2 2v7l9 9a2 2 0 0 0 2.8 0l6.2-6.2a2 2 0 0 0 0-2.8z" />
+    <circle cx="7.5" cy="7.5" r="1" />
+  </Svg>
+);
+
 export const BatteryIcon = (p: IconProps) => (
   <Svg {...p}>
     <rect x="3" y="7" width="16" height="10" rx="2" />

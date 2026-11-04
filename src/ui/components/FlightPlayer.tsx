@@ -18,6 +18,7 @@ import { Scatter } from './Scatter.tsx';
 import { Sticks } from './Sticks.tsx';
 import { FitIcon, FollowIcon, LayersIcon, MinusIcon, PauseIcon, PlayIcon, PlusIcon } from './icons.tsx';
 import { eventTone, HINT_TONE } from '../marks.ts';
+import { BADGE } from './badge.ts';
 import { MarkRow } from './TimelineMark.tsx';
 
 // Warning levels and pack number of the cores: shown as colors, hints and the pack, not as bare numbers.
@@ -263,13 +264,14 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
         // the hints first, without scrolling; over one, map and values show its moment
         <Alert status="warning" className="items-center">
           <Alert.Indicator />
-          <Alert.Content className="flex-row flex-wrap items-center gap-2">
-            <Alert.Title className="mr-1">{t.hintCount(track.hints.length)}</Alert.Title>
+          <Alert.Content className="flex-row flex-wrap items-center gap-1.5">
+            <Alert.Title className="sr-only">{t.hintCount(track.hints.length)}</Alert.Title>
             {track.hints.map((h) => (
               <Button
                 key={`${h.t}${h.kind}`}
                 size="sm"
                 variant="tertiary"
+                className={`${BADGE} gap-1.5`}
                 aria-label={t.jumpTo(t.hintNames[h.kind], fromTakeoff(h.t, track.takeoff))}
                 onPress={() => pickHint(h.t)}
                 onHoverStart={() => setHover(h.t)}
@@ -618,7 +620,8 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
             <Scatter track={track} series={series} pair={pair} onPair={setPair} time={time} range={range ?? [0, track.duration]} />
           </Tabs.Panel>
           <Tabs.Panel id="analysis" className="pt-3">
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {/* as many cards side by side as fit at 340 px; those in a row share what is left */}
+            <div className="flex flex-wrap gap-6">
               {summary.length > 0 && (
                 <EventList
                   title={t.summary}
@@ -648,26 +651,26 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
 function EventList(props: { title: string; empty: string; items: { t: number; text: string; value?: string }[]; takeoff: number; onPick: (t: number) => void }) {
   const { t } = usePrefs();
   return (
-    <Card variant="secondary">
+    <Card variant="secondary" className="min-w-0 flex-[1_1_340px]">
       <Card.Header>
         <Card.Title>{props.title}</Card.Title>
       </Card.Header>
       <Card.Content className="p-0">
         {props.items.length === 0 ? (
-          <p className="m-0 px-5 pb-4 text-sm text-muted">{props.empty}</p>
+          <p className="m-0 text-sm text-muted">{props.empty}</p>
         ) : (
-          <ul className="m-0 list-none p-0">
+          <ul className="-mx-2 m-0 list-none p-0">
             {props.items.map((e) => (
               <li key={`${e.t}${e.text}`} className="border-t border-separator">
                 <button
                   type="button"
                   aria-label={t.jumpTo(e.value ? `${e.text} ${e.value}` : e.text, fromTakeoff(e.t, props.takeoff))}
-                  className="flex w-full cursor-pointer gap-4 border-0 bg-transparent px-5 py-2 text-left text-sm text-foreground hover:bg-surface-tertiary"
+                  className="flex w-full cursor-pointer items-baseline gap-3 rounded-md border-0 bg-transparent px-2 py-2 text-left text-sm text-foreground hover:bg-surface-tertiary"
                   onClick={() => props.onPick(e.t)}
                 >
-                  <span className="w-16 font-mono tabular-nums text-muted">{fromTakeoff(e.t, props.takeoff)}</span>
-                  <span>{e.text}</span>
-                  {e.value && <span className="ml-auto font-semibold tabular-nums">{e.value}</span>}
+                  <span className="w-14 shrink-0 font-mono whitespace-nowrap tabular-nums text-muted">{fromTakeoff(e.t, props.takeoff)}</span>
+                  <span className="min-w-0 flex-1">{e.text}</span>
+                  {e.value && <span className="shrink-0 font-semibold whitespace-nowrap tabular-nums">{e.value}</span>}
                 </button>
               </li>
             ))}
@@ -694,8 +697,8 @@ function ValueLines(props: {
         const row = (
           <>
             <i className="inline-block size-2 shrink-0 self-center rounded-full" style={{ background: props.chosen.includes(v.k) ? props.colors[v.k] : 'transparent' }} />
-            <span className="min-w-0 truncate text-sm">
-              {v.label} {v.label !== v.name && <span className="font-mono text-xs text-muted">{v.name}</span>}
+            <span className="min-w-0 text-sm">
+              {v.label} {v.label !== v.name && <span className="font-mono text-xs whitespace-nowrap text-muted">{v.name}</span>}
             </span>
             <span className="ml-auto shrink-0 text-sm font-semibold tabular-nums">{v.value}</span>
           </>
