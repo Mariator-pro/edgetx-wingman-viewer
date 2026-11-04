@@ -1,6 +1,7 @@
 {
   "name": "edgetx-wingman-viewer",
   "productName": "EdgeTX Wingman Viewer",
+  "desktopName": "edgetx-wingman-viewer.desktop",
   "private": true,
   "version": "0.1.1",
   "description": "Flight map and log viewer for EdgeTX radios",
@@ -129,6 +130,7 @@
         }
       ],
       "category": "Utility",
+      "syncDesktopName": true,
       "artifactName": "edgetx-wingman-viewer-linux-v${version}.${ext}"
     },
     "nsis": {
