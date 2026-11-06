@@ -3,7 +3,7 @@
   "productName": "EdgeTX Wingman Viewer",
   "desktopName": "edgetx-wingman-viewer.desktop",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Flight map and log viewer for EdgeTX radios",
   "author": "Mariator-pro",
   "license": "MIT",
