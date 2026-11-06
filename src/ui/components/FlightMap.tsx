@@ -16,7 +16,7 @@ export type View = '2d' | '3d';
 export type Base = 'street' | 'satellite';
 
 const OSM_ATTR = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors';
-const ESRI_ATTR = 'Powered by <a href="https://www.esri.com" target="_blank" rel="noreferrer">Esri</a> | Esri, Maxar, Earthstar Geographics, and the GIS User Community';
+const ESRI_ATTR = 'Powered by <a href="https://www.esri.com" target="_blank" rel="noreferrer">Esri</a> | Esri, Vantor, Earthstar Geographics, and the GIS User Community';
 const esriTiles = (key: string) =>
   `https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=${encodeURIComponent(key)}`;
 

@@ -37,6 +37,12 @@ The pages may be shown in your language: in German, for example, the steps are c
 
 ## When the key runs out
 
-Keys expire on the date chosen above. The legend on the map then shows "Esri doesn't send the satellite imagery. Check your ArcGIS key in Settings." Create a new key on the item's page in your portal (or a new item as above) and paste it into **Settings** again.
+Keys expire on the date chosen above, so create a new one in time: on the item's page in your portal (or a new item as above), then paste it into **Settings** again.
 
-The key is stored only in the app's [data folder](../README.md#your-data-on-the-computer) on your computer and is sent only to Esri, with each satellite tile.
+If Esri refuses the tiles, the legend on the map shows "Esri doesn't send the satellite imagery. Check your ArcGIS key in Settings."
+
+## Your account and your data
+
+Your ArcGIS account is your own agreement with Esri, and its terms apply to how you use the imagery.
+
+The key is stored only in the app's [data folder](../README.md#your-data-on-the-computer) on your computer and is sent only to Esri, with each satellite tile. Those requests also tell Esri which areas you are looking at, so where you fly can be linked to your account.
