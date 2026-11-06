@@ -1,4 +1,4 @@
-import { Alert, Button, ButtonGroup, Card, Chip, Disclosure, Dropdown, ListBox, Select, Slider, Tabs, ToggleButton, ToggleButtonGroup, Tooltip } from '@heroui/react';
+import { Alert, Button, ButtonGroup, Card, Chip, Disclosure, Dropdown, ListBox, ScrollShadow, Select, Slider, Tabs, ToggleButton, ToggleButtonGroup, Tooltip } from '@heroui/react';
 import type { Map as MapLibre } from 'maplibre-gl';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Airframe, TrackValue } from '../../core/kinds.ts';
@@ -511,13 +511,13 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
             </Card>
           </div>
         </Card>
-        {/* as high as the map; the values scroll, the sticks stay at the bottom */}
+        {/* as high as the map; the values scroll without a bar and fade at the edges, the sticks stay at the bottom */}
         <Card className="h-[clamp(520px,calc(100vh_-_280px),820px)] flex-[1_1_260px] gap-3 p-4" aria-label={t.values}>
           <Card.Header className="flex-row items-baseline justify-between">
             <Card.Title>{t.values}</Card.Title>
             <span className="text-xs tabular-nums text-muted">{t.atTime(fromTakeoff(shownTime, track.takeoff))}</span>
           </Card.Header>
-          <Card.Content className="min-h-0 flex-1 overflow-y-auto">
+          <ScrollShadow hideScrollBar size={24} className="min-h-0 flex-1">
             <div className="flex flex-col gap-4">
               {groups.map((g) => (
                 <section key={g.id} aria-label={t.valueGroups[g.id]}>
@@ -542,7 +542,7 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
               )}
             </div>
             {!up && <p className="m-0 mt-2 text-xs text-muted">{t.noTelemetry}</p>}
-          </Card.Content>
+          </ScrollShadow>
           {track.sticks && (
             <Card.Footer className="border-t border-separator pt-3">
               <Sticks track={track} row={row} mode={track.stickMode ?? sticks} />
