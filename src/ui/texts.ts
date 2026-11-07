@@ -26,7 +26,7 @@ const en = {
   notCopied: 'No logs copied yet',
   importLog: 'Import log',
   appUpdateAvailable: (v: string) => `EdgeTX Wingman Viewer ${v} is available`,
-  appUpdateInstall: 'Update and restart',
+  appUpdateInstall: 'Update',
   appUpdateDownload: 'Download',
   appDownloading: (pct: number) => `Downloading update … ${pct} %`,
   appRestarting: 'Restarting …',

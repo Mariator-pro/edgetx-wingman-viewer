@@ -22,7 +22,7 @@ export const de: Texts = {
   notCopied: 'Noch keine Logs kopiert',
   importLog: 'Log importieren',
   appUpdateAvailable: (v) => `EdgeTX Wingman Viewer ${v} ist verfügbar`,
-  appUpdateInstall: 'Aktualisieren und neu starten',
+  appUpdateInstall: 'Aktualisieren',
   appUpdateDownload: 'Herunterladen',
   appDownloading: (pct) => `Update wird heruntergeladen … ${pct} %`,
   appRestarting: 'Wird neu gestartet …',
