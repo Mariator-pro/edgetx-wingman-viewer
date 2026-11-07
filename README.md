@@ -1,6 +1,6 @@
-![EdgeTX Wingman Viewer: analyze, visualize and optimize your flights](docs/banner.png)
-
 # EdgeTX Wingman Viewer
+
+![EdgeTX Wingman Viewer: analyze, visualize and optimize your flights](docs/banner.png)
 
 See every flight from your EdgeTX radio on a map, in 2D and 3D, and play it back with the telemetry values, sticks and charts. Plug in the radio, and the app copies the new logs from its SD card and lists each flight on its own, from arming to disarming.
 
