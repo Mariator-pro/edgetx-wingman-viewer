@@ -47,6 +47,13 @@ body {
   }
 }
 
+/* A dialog that scrolls inside keeps its scrollbar in the dialog's own padding, so switches and the arrows of
+   selects at the right edge stay clear of it; the content keeps its width. */
+.modal__body--scroll-inside {
+  margin-right: -1rem;
+  padding-right: 1rem;
+}
+
 /* Lists that open from a grey field or button (secondary selects, the language, the flight list's menus) in
    that field's colour; their rows get a lighter hover, which HeroUI's grey would hide. */
 .field-list {
