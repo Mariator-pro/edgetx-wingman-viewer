@@ -221,7 +221,7 @@ export function FlightBagPage(props: {
       {dirty && (
         <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-2 rounded-2xl border border-border bg-background p-3 pl-5 shadow-2xl shadow-black">
           <span className="mr-auto font-medium">{t.fbUnsaved}</span>
-          <Button variant="secondary" isDisabled={saving} onPress={reset}>
+          <Button variant="tertiary" isDisabled={saving} onPress={reset}>
             {t.fbDiscard}
           </Button>
           <Button isDisabled={saving} onPress={save}>

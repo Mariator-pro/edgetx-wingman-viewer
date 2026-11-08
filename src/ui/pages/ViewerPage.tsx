@@ -130,7 +130,7 @@ export function ViewerPage(props: {
                         <TextArea placeholder={t.notePlaceholder} maxLength={MAX_NOTE} rows={4} />
                       </TextField>
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="ghost" onPress={() => setNote(undefined)}>
+                        <Button size="sm" variant="tertiary" onPress={() => setNote(undefined)}>
                           {t.cancel}
                         </Button>
                         <Button type="submit" size="sm" isDisabled={note === (f.note ?? '')}>
@@ -277,7 +277,7 @@ function PackChip({ pack }: { pack: PackView }) {
   if (pack.lastUsed) rows.push([t.packLastUsed, new Date(`${pack.lastUsed}T12:00:00`).toLocaleDateString(t.locale, { dateStyle: 'medium' })]);
   return (
     <Popover>
-      <Button size="sm" variant="secondary" className={`${BADGE} gap-1.5 font-medium`} aria-label={`${t.packDetails}: ${name}`}>
+      <Button size="sm" variant="tertiary" className={`${BADGE} gap-1.5 font-medium`} aria-label={`${t.packDetails}: ${name}`}>
         <BatteryIcon size={14} />
         {name}
         {pack.cycles !== undefined && <span className="text-muted">· {t.cycles(pack.cycles)}</span>}

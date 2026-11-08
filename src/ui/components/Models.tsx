@@ -72,7 +72,7 @@ export function Models(props: { volume: string; view: ModelsView; run: Run; noti
                     {view.lipo ? <Table.Cell className="text-muted">{m.customSensors ? t.fbCustom : t.fbGeneral}</Table.Cell> : null}
                     <Table.Cell className="text-muted">{view.wingman ? mods(m) : ''}</Table.Cell>
                     <Table.Cell>
-                      <Button size="sm" variant="outline" aria-label={`${t.fbEditModel}: ${m.name}`} onPress={() => setEditing({ file: m.file })}>
+                      <Button size="sm" variant="ghost" aria-label={`${t.fbEditModel}: ${m.name}`} onPress={() => setEditing({ file: m.file })}>
                         {t.fbEditModel}
                       </Button>
                     </Table.Cell>
@@ -273,7 +273,7 @@ function ModelDialog(props: { volume: string; file?: string; free: ModelSummary[
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="m-0 text-base font-semibold">{t.fbSensors}</h3>
                   {edit.customSensors && (
-                    <Button size="sm" variant="tertiary" onPress={() => set({ sensors: {} })}>
+                    <Button size="sm" variant="outline" onPress={() => set({ sensors: {} })}>
                       {t.fbUseDefaultSensors}
                     </Button>
                   )}

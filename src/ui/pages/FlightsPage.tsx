@@ -177,7 +177,7 @@ export function FlightsPage(props: { flights?: FlightView[]; run: Run; onOpen: (
             {shown.length}
           </Chip>
         </div>
-        <Button variant="ghost" onPress={onSample}>
+        <Button variant="outline" onPress={onSample}>
           {t.openSample}
         </Button>
       </div>

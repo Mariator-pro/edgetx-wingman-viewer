@@ -346,7 +346,7 @@ export function ChartTools(props: {
     <div className="flex flex-wrap items-center gap-3">
       {props.measure && props.marks.b === undefined && <span className="text-sm text-muted">{props.marks.a === undefined ? t.measureA : t.measureB}</span>}
       {props.zoomed && (
-        <Button variant="ghost" size="sm" onPress={props.onWholeFlight}>
+        <Button variant="tertiary" size="sm" onPress={props.onWholeFlight}>
           {t.wholeFlight}
         </Button>
       )}
@@ -359,7 +359,7 @@ export function ChartTools(props: {
         </Switch.Content>
       </Switch>
       <Dropdown>
-        <Button variant="outline" size="sm">
+        <Button variant="tertiary" size="sm">
           <SlidersIcon size={14} />
           {t.chooseValues}
         </Button>

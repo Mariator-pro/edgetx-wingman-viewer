@@ -1,4 +1,4 @@
-import { Button, Label, ListBox, Select } from '@heroui/react';
+import { Label, ListBox, Select, ToggleButton, ToggleButtonGroup } from '@heroui/react';
 import { useMemo } from 'react';
 import type { TrackView } from '../../server/api.ts';
 import { extent, fitCurve, formatValue, PAIRS, type Series } from '../series.ts';
@@ -121,11 +121,22 @@ export function Scatter(props: { track: TrackView; series: Series[]; pair: [stri
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-3">
-        {pairs.map(({ p, name }) => (
-          <Button key={p.join()} size="sm" variant={p[0] === pair[0] && p[1] === pair[1] ? 'primary' : 'outline'} onPress={() => props.onPair(p)}>
-            {name}
-          </Button>
-        ))}
+        <ToggleButtonGroup
+          aria-label={t.scatterTab}
+          size="sm"
+          selectionMode="single"
+          selectedKeys={[pair.join()]}
+          onSelectionChange={(k) => {
+            const hit = pairs.find(({ p }) => p.join() === [...k][0]);
+            if (hit) props.onPair(hit.p);
+          }}
+        >
+          {pairs.map(({ p, name }) => (
+            <ToggleButton key={p.join()} id={p.join()}>
+              {name}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
         <span className="flex-1" />
         {axis(0)}
         {axis(1)}
