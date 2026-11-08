@@ -4,9 +4,9 @@ import type { ProgressEvent, RadioView, StateView } from '../../server/api.ts';
 import { dateTime } from '../format.ts';
 import { LANGUAGES, type Lang } from '../texts.ts';
 import { usePrefs, type Theme } from '../usePrefs.ts';
-import { ListIcon, MapIcon, MoonIcon, PathIcon, SettingsIcon, SunIcon, UploadIcon } from './icons.tsx';
+import { BagIcon, ListIcon, MapIcon, MoonIcon, PathIcon, SettingsIcon, SunIcon, UploadIcon } from './icons.tsx';
 
-export type Page = 'flights' | 'viewer' | 'settings';
+export type Page = 'flights' | 'viewer' | 'flightbag' | 'settings';
 
 export function Sidebar(props: {
   state?: StateView;
@@ -26,6 +26,7 @@ export function Sidebar(props: {
   const overview = [
     { page: 'flights' as const, label: t.flights, Icon: ListIcon },
     { page: 'viewer' as const, label: t.viewer, Icon: MapIcon, sub: viewerLabel },
+    { page: 'flightbag' as const, label: t.flightBag, Icon: BagIcon },
     { page: 'settings' as const, label: t.settings, Icon: SettingsIcon },
   ];
   // Always dark: the "dark" class gives its HeroUI controls dark colours in the light theme too.
@@ -138,7 +139,7 @@ export function Sidebar(props: {
               <Select.Value />
               <Select.Indicator />
             </Select.Trigger>
-            <Select.Popover className="dark text-foreground">
+            <Select.Popover className="field-list dark text-foreground">
               <ListBox>
                 {LANGUAGES.map((l) => (
                   <ListBox.Item key={l.id} id={l.id} textValue={l.name}>

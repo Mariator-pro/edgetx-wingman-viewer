@@ -47,7 +47,7 @@ export function Scatter(props: { track: TrackView; series: Series[]; pair: [stri
         <Select.Value />
         <Select.Indicator />
       </Select.Trigger>
-      <Select.Popover>
+      <Select.Popover className="field-list">
         <ListBox>
           {series.map((s) => (
             <ListBox.Item key={s.id} id={s.id} textValue={`${s.name} ${s.label}`}>

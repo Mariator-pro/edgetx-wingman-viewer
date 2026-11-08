@@ -193,7 +193,7 @@ export function FlightsPage(props: { flights?: FlightView[]; run: Run; onOpen: (
               </Chip>
             )}
           </Button>
-          <Dropdown.Popover placement="bottom start">
+          <Dropdown.Popover className="field-list" placement="bottom start">
             <Dropdown.Menu aria-label={t.filter}>
               <FilterSubmenu label={t.modelFilter} all={t.allModels} value={model} options={models.map((m) => ({ id: m, label: m }))} onChange={setModel} />
               <FilterSubmenu label={t.radioFilter} all={t.allRadios} value={radio} options={radios.map((r) => ({ id: r, label: r }))} onChange={setRadio} />
@@ -222,7 +222,7 @@ export function FlightsPage(props: { flights?: FlightView[]; run: Run; onOpen: (
             <SortIcon size={16} />
             {t.sort}
           </Button>
-          <Dropdown.Popover placement="bottom start">
+          <Dropdown.Popover className="field-list" placement="bottom start">
             <Dropdown.Menu aria-label={t.sort}>
               <Dropdown.Section
                 selectionMode="single"
@@ -272,7 +272,7 @@ export function FlightsPage(props: { flights?: FlightView[]; run: Run; onOpen: (
             <ColumnsIcon size={16} />
             {t.columns}
           </Button>
-          <Dropdown.Popover placement="bottom start">
+          <Dropdown.Popover className="field-list" placement="bottom start">
             <Dropdown.Menu
               aria-label={t.columns}
               selectionMode="multiple"
@@ -464,7 +464,7 @@ function FilterSubmenu(props: { label: string; all: string; value: string; optio
         <span className="ml-auto max-w-40 truncate pl-3 text-xs text-muted">{current}</span>
         <Dropdown.SubmenuIndicator />
       </Dropdown.Item>
-      <Dropdown.Popover>
+      <Dropdown.Popover className="field-list">
         <Dropdown.Menu
           aria-label={props.label}
           selectionMode="single"

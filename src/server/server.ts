@@ -11,7 +11,8 @@ import type { Paths } from '../core/paths.ts';
 import { radioName } from '../core/radios.ts';
 import { DEFAULT_TILES, ESRI_ORIGIN, listPrefs, loadSettings, saveSettings, tilesOrigin, validKey, validTiles, type MapSettings, type Settings } from '../core/settings.ts';
 import { flightTrack } from '../core/track.ts';
-import { findCards, readCard, syncCard, type RadioCard } from '../core/store.ts';
+import { batteryEdit, changeBattery, changeModel, checkDraft, checkEdits, fixFlightBag, flightBagView, isFlightBagPage, modelEdit, readSound, saveFlightBag } from '../core/flightbag.ts';
+import { copyProjects, findCards, readCard, syncCard, type RadioCard } from '../core/store.ts';
 import { listVolumes } from '../platform/volumes.ts';
 import {
   FILE_NAME_HEADER,
@@ -130,12 +131,12 @@ async function body<T>(req: IncomingMessage): Promise<T> {
   }
 }
 
-// A file instead of JSON: an exported flight.
+// A file instead of JSON: an exported flight, or a sound to play (no download name).
 class FileAnswer {
-  data: string;
+  data: string | Buffer;
   type: string;
-  download: string;
-  constructor(data: string, type: string, download: string) {
+  download?: string;
+  constructor(data: string | Buffer, type: string, download?: string) {
     this.data = data;
     this.type = type;
     this.download = download;
@@ -310,6 +311,19 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
     };
   };
 
+  // A Flight Bag request: the connected card and the page.
+  const flightBagArgs = async (req: IncomingMessage) => {
+    const b = await body<{ volume?: unknown; page?: unknown; edits?: unknown; app?: unknown }>(req);
+    if (!isFlightBagPage(b.page)) throw new HttpError(400, 'invalidRequest', { what: 'page' });
+    return { card: await cardAt(b.volume), page: b.page, edits: checkEdits(b.edits), app: b.app };
+  };
+  // After Flight Bag wrote to the card: its settings into the app's copy, and the flights again with them.
+  const afterFlightBag = async (c: RadioCard) => {
+    await copyProjects(c, p);
+    library.forget();
+    changed();
+  };
+
   type Route = (req: IncomingMessage, q: URLSearchParams) => Promise<unknown>;
   const routes: Record<string, Route> = {
     'GET /api/state': async () => state(),
@@ -411,6 +425,59 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
         return { count };
       });
     },
+    'POST /api/flightbag/view': async (req) => {
+      const { card, page, edits } = await flightBagArgs(req);
+      return flightBagView(card.volume, page, edits);
+    },
+    'POST /api/flightbag/save': async (req) => {
+      const { card, page, edits } = await flightBagArgs(req);
+      return op('flightBag', async () => {
+        const r = await saveFlightBag(card.volume, page, edits);
+        if (r.written.length > 0) await afterFlightBag(card);
+        return { problems: r.problems };
+      });
+    },
+    'POST /api/flightbag/fix': async (req) => {
+      const { card, page, app } = await flightBagArgs(req);
+      if (typeof app !== 'string') throw new HttpError(400, 'invalidRequest', { what: 'app' });
+      return op('flightBag', async () => {
+        await fixFlightBag(card.volume, page, app);
+        await afterFlightBag(card);
+      });
+    },
+    'POST /api/flightbag/battery': async (req) => {
+      const b = await body<{ volume?: unknown; id?: unknown; draft?: unknown; action?: unknown }>(req);
+      const card = await cardAt(b.volume);
+      const id = typeof b.id === 'string' && b.id.length <= 32 ? b.id : undefined;
+      const draft = checkDraft(b.draft);
+      if (b.action === 'save' || b.action === 'delete') {
+        const action = b.action;
+        return op('flightBag', async () => {
+          const r = await changeBattery(card.volume, id, draft, action);
+          if (!r.problem) await afterFlightBag(card);
+          return r;
+        });
+      }
+      return batteryEdit(card.volume, id, draft);
+    },
+    'POST /api/flightbag/model': async (req) => {
+      const b = await body<{ volume?: unknown; file?: unknown; draft?: unknown; action?: unknown }>(req);
+      const card = await cardAt(b.volume);
+      const draft = checkDraft(b.draft);
+      if (b.action === 'save' || b.action === 'delete') {
+        const action = b.action;
+        return op('flightBag', async () => {
+          const r = await changeModel(card.volume, b.file, draft, action);
+          if (!r.problem) await afterFlightBag(card);
+          return r;
+        });
+      }
+      return modelEdit(card.volume, b.file, draft);
+    },
+    'GET /api/flightbag/sound': async (_req, q) => {
+      const card = await cardAt(q.get('volume'));
+      return new FileAnswer(await readSound(card.volume, q.get('path') ?? ''), 'audio/wav');
+    },
     'GET /api/licenses': async (): Promise<LicensesView> => {
       const text = o.licensesFile ? await readFile(o.licensesFile, 'utf8').catch(() => undefined) : undefined;
       if (text === undefined) throw new HttpError(404, 'licensesMissing');
@@ -482,11 +549,29 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
       if (route) {
         const answer = await route(req, url.searchParams);
         if (!(answer instanceof FileAnswer)) return json(res, answer);
-        res.writeHead(200, {
+        const head = {
           'Content-Type': answer.type,
           'Cache-Control': 'no-store',
-          'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(answer.download)}`,
-        });
+          'Accept-Ranges': 'bytes',
+          ...(answer.download ? { 'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(answer.download)}` } : {}),
+        };
+        // Safari asks for sounds piece by piece and plays nothing without them
+        const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
+        if (range && (range[1] || range[2])) {
+          const data = typeof answer.data === 'string' ? Buffer.from(answer.data) : answer.data;
+          const size = data.length;
+          const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
+          const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
+          if (start >= size || start > end) {
+            res.writeHead(416, { 'Content-Range': `bytes */${size}` });
+            res.end();
+            return;
+          }
+          res.writeHead(206, { ...head, 'Content-Range': `bytes ${start}-${end}/${size}` });
+          res.end(data.subarray(start, end + 1));
+          return;
+        }
+        res.writeHead(200, head);
         res.end(answer.data);
         return;
       }

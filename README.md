@@ -23,7 +23,7 @@ Desktop app for macOS, Windows and Linux, in English and German (English by defa
 
 It is careful with your data:
 
-- The app only reads the SD card. The one exception is "Clean up SD card", which deletes only logs the app already keeps an identical copy of.
+- The app only reads the SD card, with two exceptions: "Clean up SD card", which deletes only logs the app already keeps an identical copy of, and saving in Flight Bag, which writes only the settings files of your Lua apps.
 - Deleted flights stay under "Recently deleted" for 30 days and can be restored until then.
 - Logs are read as EdgeTX writes them; lines the app can't read are skipped and counted, never guessed.
 
@@ -118,7 +118,19 @@ The Viewer shows the chosen flight. At the top are the model, date and radio, th
 
 To export many flights at once, use the [command line](docs/command-line.md).
 
-### 5. Settings
+### 5. Flight Bag
+
+With the radio connected, "Flight Bag" in the sidebar sets your Lua apps (Lipo Nanny, Link Sentinel, GPS Homer and Wingman) the way Flight Bag does on the radio: the same fields and rules, read from the apps on the SD card.
+
+- **Warnings, Alerts, Display**: thresholds, sounds (play them on the computer), vibration and what Wingman shows. Settings shared by the apps sit on top under "All apps".
+- **Batteries**: Lipo Nanny's batteries with their packs and statistics. Add or edit a battery, add or retire packs.
+- **Models**: per model the cells, parallel packs, which batteries it flies with, the telemetry sensors Lipo Nanny reads (chosen from the sensors in the model's file, for any model, not only the selected one) and what Wingman shows for it. "Add model" sets up another model from the SD card. The "SD Logs" setting stays on the radio for now.
+- **Last flights**: the last positions GPS Homer stored when the telemetry ended, with "Open map", "Copy position" and, when the app has the flight, "Open flight".
+- **Save** writes the settings to the SD card, and writes nothing while a value breaks one of the apps' rules. Each file is written next to the old one first and then replaces it, so unplugging the radio while saving never leaves half a file.
+
+This part is new and not yet checked on a radio.
+
+### 6. Settings
 
 - **Map**: the street map comes from OpenStreetMap. Change the tile address only if you use another tile server with the same layout. Satellite imagery comes from Esri and needs your own ArcGIS key (a free account on ArcGIS Location Platform with basemap access); the app has no key of its own. See [Satellite map](docs/satellite-map.md) for how to create one.
 - **Stick mode for imported logs**: logs copied from a radio use the stick mode set on it. For imported logs the app doesn't know it, so choose it here (mode 2 by default).

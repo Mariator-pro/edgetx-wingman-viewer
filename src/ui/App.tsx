@@ -1,15 +1,15 @@
-import { Alert, CloseButton, Spinner } from '@heroui/react';
-import { useEffect, useState } from 'react';
+import { Alert, Spinner, Toast } from '@heroui/react';
+import { useCallback, useEffect, useState } from 'react';
 import type { FlightView, RadioView } from '../server/api.ts';
 import { errorText, get, post, postFile, useServer } from './api.ts';
 import { Confirm } from './components/Confirm.tsx';
 import { Sidebar, type Page } from './components/Sidebar.tsx';
+import { FlightBagPage } from './pages/FlightBagPage.tsx';
 import { FlightsPage } from './pages/FlightsPage.tsx';
+import { notify } from './notify.ts';
 import { SettingsPage } from './pages/SettingsPage.tsx';
 import { ViewerPage } from './pages/ViewerPage.tsx';
 import { usePrefs } from './usePrefs.ts';
-
-type Notice = { status: 'success' | 'danger' | 'default'; title: string; text?: string };
 
 export function App() {
   const { state, progress, connected } = useServer();
@@ -18,8 +18,14 @@ export function App() {
   const [flights, setFlights] = useState<FlightView[]>();
   const [flightKey, setFlightKey] = useState<string>();
   const [viewerLabel, setViewerLabel] = useState<string>();
-  const [notice, setNotice] = useState<Notice>();
   const [cleaning, setCleaning] = useState<RadioView>();
+  const [unsaved, setUnsaved] = useState(false); // changes in Flight Bag not on the radio yet
+  const [leaving, setLeaving] = useState<Page>();
+  const onDirty = useCallback((d: boolean) => setUnsaved(d), []);
+  const navigate = (target: Page) => {
+    if (page === 'flightbag' && target !== page && unsaved) setLeaving(target);
+    else setPage(target);
+  };
 
   // The list again whenever flights, notes or tags change on the server.
   const version = state?.flightsVersion;
@@ -29,7 +35,7 @@ export function App() {
   }, [version]);
 
   const run = (fn: () => Promise<unknown>) => {
-    fn().catch((e: unknown) => setNotice({ status: 'danger', title: t.failed, text: errorText(t, e) }));
+    fn().catch((e: unknown) => notify({ status: 'danger', title: t.failed, text: errorText(t, e) }));
   };
   const open = (key: string) => {
     setFlightKey(key);
@@ -38,20 +44,21 @@ export function App() {
 
   return (
     <div className="flex min-h-screen flex-wrap">
+      <Toast.Provider />
       <Sidebar
         state={state}
         progress={progress}
         page={page}
         viewerLabel={flightKey ? viewerLabel : undefined}
-        onNavigate={setPage}
+        onNavigate={navigate}
         onCleanUp={(r) => {
-          if (r.cleanable === 0) setNotice({ status: 'default', title: t.nothingToClean });
+          if (r.cleanable === 0) notify({ status: 'default', title: t.nothingToClean });
           else setCleaning(r);
         }}
         onImport={(file) =>
           run(async () => {
             const { count } = await postFile<{ count: number }>('/api/import', file);
-            setNotice(count > 0 ? { status: 'success', title: t.importDone(file.name, count) } : { status: 'default', title: t.importNone(file.name) });
+            notify(count > 0 ? { status: 'success', title: t.importDone(file.name, count) } : { status: 'default', title: t.importNone(file.name) });
           })
         }
         onAppUpdate={() => run(() => post('/api/app-update'))}
@@ -66,16 +73,6 @@ export function App() {
             </Alert.Content>
           </Alert>
         )}
-        {notice && (
-          <Alert status={notice.status}>
-            <Alert.Indicator />
-            <Alert.Content>
-              <Alert.Title>{notice.title}</Alert.Title>
-              {notice.text && <Alert.Description>{notice.text}</Alert.Description>}
-            </Alert.Content>
-            <CloseButton aria-label={t.close} onPress={() => setNotice(undefined)} />
-          </Alert>
-        )}
         {!state ? (
           <Spinner />
         ) : page === 'viewer' ? (
@@ -85,14 +82,35 @@ export function App() {
             run={run}
             onOpen={setFlightKey}
             onLabel={setViewerLabel}
-            notify={(title) => setNotice({ status: 'success', title })}
+            notify={(title) => notify({ status: 'success', title })}
+          />
+        ) : page === 'flightbag' ? (
+          <FlightBagPage
+            radios={state.radios}
+            flights={flights}
+            run={run}
+            notify={(title) => notify({ status: 'success', title })}
+            onDirty={onDirty}
+            onOpenFlight={open}
           />
         ) : page === 'settings' ? (
           <SettingsPage run={run} />
         ) : (
-          <FlightsPage flights={flights} run={run} onOpen={open} onSample={() => open('sample')} notify={(title) => setNotice({ status: 'success', title })} />
+          <FlightsPage flights={flights} run={run} onOpen={open} onSample={() => open('sample')} notify={(title) => notify({ status: 'success', title })} />
         )}
       </main>
+      {leaving && (
+        <Confirm
+          title={t.fbDiscardTitle}
+          text={t.fbDiscardText}
+          confirm={t.fbDiscardConfirm}
+          onConfirm={() => {
+            setUnsaved(false);
+            setPage(leaving);
+          }}
+          onClose={() => setLeaving(undefined)}
+        />
+      )}
       {cleaning && (
         <Confirm
           title={t.cleanUpTitle}
@@ -101,7 +119,7 @@ export function App() {
           onConfirm={() =>
             run(async () => {
               const { count } = await post<{ count: number }>('/api/cleanup', { volume: cleaning.volume });
-              setNotice({ status: 'success', title: t.cleanedUp(count) });
+              notify({ status: 'success', title: t.cleanedUp(count) });
             })
           }
           onClose={() => setCleaning(undefined)}

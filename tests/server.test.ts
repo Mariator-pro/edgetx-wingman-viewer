@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { request } from 'node:http';
 import { join } from 'node:path';
@@ -99,6 +99,23 @@ describe('server', () => {
     expect(res.headers.get('content-disposition')).toMatch(/^attachment; filename\*=UTF-8''Sample_Quad-/);
     expect(await res.text()).toContain('<gpx');
     expect((await api(`/api/export?key=${encodeURIComponent(a!.key)}&format=exe`)).status).toBe(400);
+  });
+
+  it('gives a sound of the card in pieces, as Safari asks for it', async () => {
+    await mkdir(join(dir, 'card', 'SOUNDS', 'en'), { recursive: true });
+    await writeFile(join(dir, 'card', 'SOUNDS', 'en', 'test.wav'), Buffer.from('RIFF0123456789'));
+    const url = `/api/flightbag/sound?volume=${encodeURIComponent(join(dir, 'card'))}&path=${encodeURIComponent('/SOUNDS/en/test.wav')}`;
+    const whole = await api(url);
+    expect(whole.status).toBe(200);
+    expect(whole.headers.get('accept-ranges')).toBe('bytes');
+    expect(await whole.text()).toBe('RIFF0123456789');
+    const piece = await api(url, { headers: { range: 'bytes=0-1' } });
+    expect(piece.status).toBe(206);
+    expect(piece.headers.get('content-range')).toBe('bytes 0-1/14');
+    expect(await piece.text()).toBe('RI');
+    expect(await (await api(url, { headers: { range: 'bytes=-4' } })).text()).toBe('6789');
+    expect((await api(url, { headers: { range: 'bytes=99-' } })).status).toBe(416);
+    expect((await api(`/api/flightbag/sound?volume=${encodeURIComponent(join(dir, 'card'))}&path=${encodeURIComponent('/SCRIPTS/x.wav')}`)).status).toBe(400);
   });
 
   it('opens the built-in sample flight, which is not in the list', async () => {

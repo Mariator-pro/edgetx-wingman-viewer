@@ -28,6 +28,7 @@
     "lint": "oxlint"
   },
   "dependencies": {
+    "fengari": "0.1.5",
     "yaml": "2.9.1"
   },
   "devDependencies": {

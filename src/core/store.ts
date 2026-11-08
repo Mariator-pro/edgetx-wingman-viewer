@@ -66,11 +66,7 @@ export const keysOf = (a: AnalysedLog) => a.flights.map((f) => flightKey(a.board
 // New and grown logs from /LOGS/ and the project data into the app's data folder. Reads the card only.
 // A log whose copy is in the trash unchanged stays there; deleted flights don't count as new.
 export async function syncCard(card: RadioCard, p: Paths, isDeleted: (key: string) => boolean = () => false): Promise<SyncResult> {
-  const target = join(p.projects, card.board);
-  const models = await readdir(join(card.volume, 'MODELS')).catch(() => [] as string[]);
-  for (const f of models.filter(isModelFile)) await copyIfChanged(join(card.volume, 'MODELS', f), join(target, 'MODELS', f));
-  for (const f of PROJECT_FILES) await copyIfChanged(join(card.volume, ...f.split('/')), join(target, ...f.split('/')));
-  const projects = await readProjects(target);
+  const projects = await copyProjects(card, p);
   const logs: string[] = [];
   let newFlights = 0;
   const entries = await readdir(join(card.volume, 'LOGS')).catch(() => [] as string[]);
@@ -88,6 +84,15 @@ export async function syncCard(card: RadioCard, p: Paths, isDeleted: (key: strin
     newFlights += keys(await readFile(copy, 'utf8')).filter((k) => !old.has(k) && !isDeleted(k)).length;
   }
   return { board: card.board, logs, newFlights };
+}
+
+// The card's models and the settings of the Lua apps into Projects/<board>/.
+export async function copyProjects(card: RadioCard, p: Paths): Promise<Projects> {
+  const target = join(p.projects, card.board);
+  const models = await readdir(join(card.volume, 'MODELS')).catch(() => [] as string[]);
+  for (const f of models.filter(isModelFile)) await copyIfChanged(join(card.volume, 'MODELS', f), join(target, 'MODELS', f));
+  for (const f of PROJECT_FILES) await copyIfChanged(join(card.volume, ...f.split('/')), join(target, ...f.split('/')));
+  return readProjects(target);
 }
 
 // Same size and modification time (to FAT's 2 s), or with content true the same bytes.

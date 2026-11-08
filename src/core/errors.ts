@@ -10,6 +10,9 @@ export const ERRORS = {
   radioNotConnected: () => 'The radio is no longer connected.',
   licensesMissing: () => 'The list of open source licenses is missing. Build the app first with “npm run build”.',
   appUpdateFailed: () => 'Couldn’t download the app update. Check your internet connection and try again.',
+  flightBagMissing: () => 'Flight Bag isn’t on this radio’s SD card. It comes with each of the Lua apps; copy one of them onto the card again.',
+  flightBagRule: (p: { detail: string }) => p.detail,
+  flightBagFailed: (p: { detail: string }) => `A Lua app on the SD card stopped with an error: ${p.detail}`,
 };
 
 export type ErrorCode = keyof typeof ERRORS;
