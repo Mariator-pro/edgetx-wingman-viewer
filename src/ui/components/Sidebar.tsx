@@ -5,6 +5,7 @@ import { dateTime } from '../format.ts';
 import { LANGUAGES, type Lang } from '../texts.ts';
 import { usePrefs, type Theme } from '../usePrefs.ts';
 import { BagIcon, ListIcon, MapIcon, MoonIcon, PathIcon, SettingsIcon, SunIcon, UploadIcon } from './icons.tsx';
+import { ConnectedRadios } from './ConnectedRadios.tsx';
 
 export type Page = 'flights' | 'viewer' | 'flightbag' | 'settings';
 
@@ -13,20 +14,21 @@ export function Sidebar(props: {
   progress?: ProgressEvent;
   page: Page;
   viewerLabel?: string; // the flight shown in the viewer
+  canView: boolean; // a flight is chosen for the viewer
   onNavigate: (page: Page) => void;
   onCleanUp: (radio: RadioView) => void;
   onImport: (file: File) => void;
   onAppUpdate: () => void;
 }) {
-  const { state, progress, page, viewerLabel, onNavigate, onCleanUp, onImport, onAppUpdate } = props;
+  const { state, progress, page, viewerLabel, canView, onNavigate, onCleanUp, onImport, onAppUpdate } = props;
   const { t, lang, setLang, theme, setTheme } = usePrefs();
   const file = useRef<HTMLInputElement>(null);
   const appUpdate = state?.appUpdate;
   const updatingApp = state?.busy === 'appUpdate';
   const overview = [
     { page: 'flights' as const, label: t.flights, Icon: ListIcon },
-    { page: 'viewer' as const, label: t.viewer, Icon: MapIcon, sub: viewerLabel },
-    { page: 'flightbag' as const, label: t.flightBag, Icon: BagIcon },
+    { page: 'viewer' as const, label: t.viewer, Icon: MapIcon, sub: viewerLabel, off: !canView },
+    { page: 'flightbag' as const, label: t.flightBag, Icon: BagIcon, off: !state?.radios.length },
     { page: 'settings' as const, label: t.settings, Icon: SettingsIcon },
   ];
   // Always dark: the "dark" class gives its HeroUI controls dark colours in the light theme too.
@@ -72,39 +74,40 @@ export function Sidebar(props: {
       )}
 
       <div className="flex flex-col gap-1.5">
-        <span className="px-2 text-[11px] font-medium tracking-wider text-zinc-400 uppercase">{t.connected}</span>
-        {state?.radios.length ? (
-          state.radios.map((r) => (
-            <div key={r.volume} className="flex flex-col gap-2 rounded-xl px-2.5 py-2">
-              <div className="flex items-center gap-2.5">
-                <span className="size-2 shrink-0 rounded-full bg-green-400" aria-hidden="true" />
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="font-semibold">{r.name}</span>
-                  <span className="truncate text-xs text-zinc-400">
-                    {state.busy === 'sync' ? t.copying : r.newFlights > 0 ? t.newFlights(r.newFlights) : t.noNewFlights}
+        <span className="px-2 text-[11px] font-medium tracking-wider text-zinc-400 uppercase">{t.radioHeading}</span>
+        <ConnectedRadios radios={state?.radios} text={t.noRadio}>
+          {(radios) =>
+            radios.map((r) => (
+              <div key={r.volume} className="flex flex-col gap-2 rounded-xl px-2.5 py-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="size-2 shrink-0 rounded-full bg-green-400" aria-hidden="true" />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="font-semibold">{r.name}</span>
+                    <span className="truncate text-xs text-zinc-400">
+                      {state?.busy === 'sync' ? t.copying : r.newFlights > 0 ? t.newFlights(r.newFlights) : t.noNewFlights}
+                    </span>
                   </span>
-                </span>
+                </div>
+                <Button size="sm" variant="outline" className="text-white" isDisabled={!!state?.busy} onPress={() => onCleanUp(r)}>
+                  {state?.busy === 'cleanup' && <Spinner size="sm" color="current" />}
+                  {t.cleanUp}
+                </Button>
               </div>
-              <Button size="sm" variant="outline" className="text-white" isDisabled={!!state.busy} onPress={() => onCleanUp(r)}>
-                {state.busy === 'cleanup' && <Spinner size="sm" color="current" />}
-                {t.cleanUp}
-              </Button>
-            </div>
-          ))
-        ) : (
-          <p className="m-0 px-2 text-sm text-zinc-400">{t.noRadio}</p>
-        )}
+            ))
+          }
+        </ConnectedRadios>
       </div>
 
       <div className="flex flex-col gap-0.5">
         <span className="px-2 pb-1.5 text-[11px] font-medium tracking-wider text-zinc-400 uppercase">{t.overview}</span>
-        {overview.map(({ page: target, label, Icon, sub }) => (
+        {overview.map(({ page: target, label, Icon, sub, off }) => (
           <button
             key={target}
             type="button"
+            disabled={off}
             onClick={() => onNavigate(target)}
             aria-current={page === target ? 'page' : undefined}
-            className={`${item} ${page === target ? 'bg-zinc-800 text-white' : 'hover:bg-zinc-800/60'}`}
+            className={`${item} ${page === target ? 'bg-zinc-800 text-white' : off ? 'cursor-default text-zinc-600' : 'hover:bg-zinc-800/60'}`}
           >
             <Icon />
             <span className="flex min-w-0 flex-col">

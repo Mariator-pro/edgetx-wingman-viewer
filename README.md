@@ -66,7 +66,7 @@ To look around before your first flight, click "Open sample flight" on the Fligh
 
 ### 1. Connect the radio
 
-Switch the radio on, plug in the USB cable and choose "USB Storage" on the radio, or put its SD card into a card reader. The radio shows up under "Connected" in the sidebar, and the app copies new logs and logs that have grown since the last time (for example a log per day with a new flight), together with the model files and the settings of your Lua projects. When it is done, the sidebar shows how many new flights it found.
+Switch the radio on, plug in the USB cable and choose "USB Storage" on the radio, or put its SD card into a card reader. The radio shows up under "Radio" in the sidebar, and the app copies new logs and logs that have grown since the last time (for example a log per day with a new flight), together with the model files and the settings of your Lua projects. When it is done, the sidebar shows how many new flights it found.
 
 Logs from other sources (a backup, a friend's radio) can be added with "Import log" at the bottom of the sidebar. They are listed as "Imported" instead of a radio.
 

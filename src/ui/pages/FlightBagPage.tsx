@@ -95,14 +95,8 @@ export function FlightBagPage(props: {
     else go();
   };
 
-  if (!radio) {
-    return (
-      <div className="flex flex-col gap-6">
-        <h1 className="m-0 text-3xl font-bold tracking-tight">{t.flightBag}</h1>
-        <p className="m-0 max-w-2xl text-muted">{t.fbNoRadio}</p>
-      </div>
-    );
-  }
+  // only for a moment: without a radio the app leaves this page
+  if (!radio) return null;
 
   const appName = (folder?: string) => view?.apps.find((a) => a.folder === folder)?.name ?? folder ?? '';
   const sections = view ? group(view.rows) : [];

@@ -27,6 +27,21 @@ export function App() {
     else setPage(target);
   };
 
+  // Flight Bag needs a radio: when it goes away, back to the flights, and say if changes were lost.
+  const [lost, setLost] = useState(0); // times changes were lost that way
+  if (page === 'flightbag' && state?.radios.length === 0) {
+    setPage('flights');
+    if (unsaved) {
+      setUnsaved(false);
+      setLost((n) => n + 1);
+    }
+  }
+  useEffect(() => {
+    if (lost > 0) notify({ status: 'danger', title: t.radioGone, text: t.fbChangesLost });
+    // only when it happens, not when the language changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lost]);
+
   // The list again whenever flights, notes or tags change on the server.
   const version = state?.flightsVersion;
   useEffect(() => {
@@ -50,6 +65,7 @@ export function App() {
         progress={progress}
         page={page}
         viewerLabel={flightKey ? viewerLabel : undefined}
+        canView={!!flightKey}
         onNavigate={navigate}
         onCleanUp={(r) => {
           if (r.cleanable === 0) notify({ status: 'default', title: t.nothingToClean });
