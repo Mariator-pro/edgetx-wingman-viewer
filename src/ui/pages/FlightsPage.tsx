@@ -5,6 +5,7 @@ import type { FlightView } from '../../server/api.ts';
 import { post } from '../api.ts';
 import { Confirm } from '../components/Confirm.tsx';
 import { ColumnsIcon, MoreIcon, SlidersIcon, SortIcon } from '../components/icons.tsx';
+import { Mascot } from '../components/Mascot.tsx';
 import { duration, flightLabel, radioLabel, shortDay, time } from '../format.ts';
 import type { Texts } from '../texts.ts';
 import { usePrefs } from '../usePrefs.ts';
@@ -177,6 +178,7 @@ export function FlightsPage(props: { flights?: FlightView[]; run: Run; onOpen: (
             {shown.length}
           </Chip>
         </div>
+        <Mascot />
         <Button variant="outline" onPress={onSample}>
           {t.openSample}
         </Button>
