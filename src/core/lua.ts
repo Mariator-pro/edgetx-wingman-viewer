@@ -16,9 +16,10 @@ const MAX_READ = 16 * 1024 * 1024; // all files of one run together
 const TIME_LIMIT_MS = 5000;
 const HOOK_EVERY = 10_000; // instructions between looks at the clock
 
-// What a script may read (and list) and where it may write: settings files of the apps only.
+// What a script may read (and list) and where it may write: settings files of the apps only, and GPS Homer's
+// list of last positions, which its resets empty.
 const READABLE = /^\/(SCRIPTS|SOUNDS|WIDGETS|MODELS)(\/|$)/;
-const WRITABLE = /^\/SCRIPTS\/[^/]+\/config\.lua$/;
+const WRITABLE = /^\/SCRIPTS\/([^/]+\/config|GPSHOMER\/flights)\.lua$/;
 
 // A card path as the scripts write it ("/SCRIPTS/LIPONY/core.lua"): its parts, or undefined when it could
 // lead anywhere else.
@@ -123,6 +124,7 @@ playFile, playNumber, playHaptic, playTone, playDuration, killEvents = nothing, 
 setTelemetryValue = nothing
 popupInput, popupWarning, popupConfirmation = nothing, nothing, nothing
 del = function() return false end -- nothing is deleted on the card
+collectgarbage = function() return 0 end -- not in this Lua; the state is short-lived anyway
 `;
 
 export interface LuaOptions {

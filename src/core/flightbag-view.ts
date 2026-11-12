@@ -32,8 +32,8 @@ export interface RowView {
   kind: 'shared' | 'head' | 'fix' | 'field' | 'sound';
   app?: string; // folder of the app; for a shared row the first of its apps
   apps?: string[]; // shared row: all apps it sets
-  text?: string; // head: the app's name; fix: what is wrong
-  button?: 'Create' | 'Reset'; // fix
+  text?: string; // head: the app's name
+  fix?: 'noConfig' | 'damaged'; // fix: the app's settings file is missing or damaged
   disabled?: boolean; // greyed out, e.g. Strength while vibration is off
   field?: FieldView;
   value?: unknown; // missing while a shared value differs per app
@@ -46,6 +46,23 @@ export interface AppInfoView {
   name: string;
   version?: string;
   ok: boolean; // works with this Flight Bag
+}
+
+// An app as Flight Bag's popup shows it: about, problems, its files and what can be reset.
+export interface AppDetailView {
+  folder: string;
+  name: string;
+  version?: string;
+  ok: boolean;
+  sign: boolean; // the warning sign beside the app
+  icon: boolean; // the card has an icon.png for it
+  url?: string; // "github.com/…", from the manifest
+  about: string[]; // e.g. copyright and licence
+  problem?: 'update' | 'noConfig' | 'damaged';
+  setupErrors: string[]; // of the radio's active model, English from the app
+  files: { label: string; path: string }[];
+  fix: boolean; // the missing or damaged settings file can be created or reset
+  resets: { id: string; label: string; ask?: string }[]; // by the manifest's id; label and question English from it
 }
 
 export interface FlightBagView {

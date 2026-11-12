@@ -11,7 +11,7 @@ import type { Paths } from '../core/paths.ts';
 import { radioName } from '../core/radios.ts';
 import { DEFAULT_TILES, ESRI_ORIGIN, listPrefs, loadSettings, saveSettings, tilesOrigin, validKey, validTiles, type MapSettings, type Settings } from '../core/settings.ts';
 import { flightTrack } from '../core/track.ts';
-import { batteryEdit, changeBattery, changeModel, checkDraft, checkEdits, fixFlightBag, flightBagView, isFlightBagPage, modelEdit, readSound, saveFlightBag } from '../core/flightbag.ts';
+import { batteryEdit, changeBattery, changeModel, checkDraft, checkEdits, fixFlightBag, flightBagAction, flightBagApps, flightBagView, isFlightBagPage, modelEdit, readAppIcon, readSound, saveFlightBag } from '../core/flightbag.ts';
 import { copyProjects, findCards, readCard, syncCard, type RadioCard } from '../core/store.ts';
 import { listVolumes } from '../platform/volumes.ts';
 import {
@@ -473,6 +473,22 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
         });
       }
       return modelEdit(card.volume, b.file, draft);
+    },
+    'GET /api/flightbag/apps': async (_req, q) => {
+      const card = await cardAt(q.get('volume'));
+      return flightBagApps(card.volume);
+    },
+    'POST /api/flightbag/action': async (req) => {
+      const b = await body<{ volume?: unknown; app?: unknown; reset?: unknown }>(req);
+      const card = await cardAt(b.volume);
+      return op('flightBag', async () => {
+        await flightBagAction(card.volume, b.app, b.reset ?? undefined);
+        await afterFlightBag(card);
+      });
+    },
+    'GET /api/flightbag/icon': async (_req, q) => {
+      const card = await cardAt(q.get('volume'));
+      return new FileAnswer(await readAppIcon(card.volume, q.get('app') ?? ''), 'image/png');
     },
     'GET /api/flightbag/sound': async (_req, q) => {
       const card = await cardAt(q.get('volume'));

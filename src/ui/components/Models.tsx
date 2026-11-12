@@ -20,7 +20,7 @@ export function Models(props: { volume: string; view: ModelsView; run: Run; noti
   const configured = view.list.filter((m) => m.configured);
   const free = view.list.filter((m) => !m.configured);
   const mods = (m: ModelSummary) => {
-    const on = view.modules.filter((x) => m.mods?.[x.key] !== false).map((x) => manifestText(lang, [`MODELS.module.${x.key}`], x.label));
+    const on = view.modules.filter((x) => m.mods?.[x.key] !== false).map((x) => manifestText(lang, [`MODELS.module.${x.key}`], 'label', x.label));
     return on.length ? on.join(', ') : t.fbNone;
   };
 
@@ -281,8 +281,8 @@ function ModelDialog(props: { volume: string; file?: string; free: ModelSummary[
                 <span className="text-sm text-muted">{t.fbSensorsText}</span>
                 <div className="flex flex-col divide-y divide-separator">
                   {edit.sensors.map((f) => {
-                    const tr = (s: string) => manifestText(lang, [`MODELS.${f.key}`], s);
-                    const label = tr(f.label);
+                    const at = [`MODELS.${f.key}`];
+                    const label = manifestText(lang, at, 'label', f.label);
                     const value = sensors[f.key] ?? '';
                     const setValue = (v: string) => {
                       const next = { ...sensors };
@@ -296,7 +296,7 @@ function ModelDialog(props: { volume: string; file?: string; free: ModelSummary[
                       <div key={f.key} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3">
                         <div className="flex min-w-60 flex-1 flex-col gap-0.5">
                           <span className="font-medium">{label}</span>
-                          {f.desc && <span className="text-sm text-muted">{tr(f.desc)}</span>}
+                          {f.desc && <span className="text-sm text-muted">{manifestText(lang, at, 'hint', f.desc)}</span>}
                         </div>
                         {f.unit ? (
                           <ToggleButtonGroup
@@ -344,14 +344,15 @@ function ModelDialog(props: { volume: string; file?: string; free: ModelSummary[
                 <span className="text-sm text-muted">{t.fbShowInWingmanText}</span>
                 <div className="flex flex-col divide-y divide-separator">
                   {edit.modules.map((m) => {
-                    const tr = (s: string) => manifestText(lang, [`MODELS.module.${m.key}`], s);
+                    const at = [`MODELS.module.${m.key}`];
+                    const label = manifestText(lang, at, 'label', m.label);
                     return (
                       <div key={m.key} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3">
                         <div className="flex min-w-60 flex-1 flex-col gap-0.5">
-                          <span className="font-medium">{tr(m.label)}</span>
-                          {m.desc && <span className="text-sm text-muted">{tr(m.desc)}</span>}
+                          <span className="font-medium">{label}</span>
+                          {m.desc && <span className="text-sm text-muted">{manifestText(lang, at, 'hint', m.desc)}</span>}
                         </div>
-                        <Switch aria-label={tr(m.label)} isSelected={draft.mods?.[m.key] !== false} onChange={(v) => set({ mods: { ...draft.mods, [m.key]: v } })}>
+                        <Switch aria-label={label} isSelected={draft.mods?.[m.key] !== false} onChange={(v) => set({ mods: { ...draft.mods, [m.key]: v } })}>
                           <Switch.Content>
                             <Switch.Control>
                               <Switch.Thumb />

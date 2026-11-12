@@ -11,6 +11,8 @@ export const ERRORS = {
   licensesMissing: () => 'The list of open source licenses is missing. Build the app first with “npm run build”.',
   appUpdateFailed: () => 'Couldn’t download the app update. Check your internet connection and try again.',
   flightBagMissing: () => 'Flight Bag isn’t on this radio’s SD card. It comes with each of the Lua apps; copy one of them onto the card again.',
+  flightBagOld: () => 'Flight Bag on this radio’s SD card is too old for this app. Copy the latest version of one of the Lua apps onto the card.',
+  flightBagNew: () => 'Flight Bag on this radio’s SD card is newer than this app. Update Wingman Viewer.',
   flightBagRule: (p: { detail: string }) => p.detail,
   flightBagFailed: (p: { detail: string }) => `A Lua app on the SD card stopped with an error: ${p.detail}`,
 };

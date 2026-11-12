@@ -12,6 +12,7 @@ import { isModelFile, parseModelYml, readYaml, RADIO_SETTINGS } from './projects
 
 import {
   isFlightBagPage,
+  type AppDetailView,
   type AppInfoView,
   type AssignView,
   type BatteriesView,
@@ -58,9 +59,14 @@ local function need(path)
   return chunk()
 end
 
+-- The interface of Flight Bag's files this program understands: { 1, >= 0 }, from apps.lua's A.API.
+local API_MAJOR = 1
 local function start()
   if A then return end
   A = need("/SCRIPTS/FLIGHTBAG/apps.lua")
+  local major = type(A.API) == "table" and A.API[1] or nil
+  if type(major) ~= "number" or major < API_MAJOR then error("flightbag:old", 0) end
+  if major > API_MAJOR then error("flightbag:new", 0) end
   apps = A.scan()
 end
 
@@ -165,7 +171,7 @@ local function describe(M, list, id)
     if r.kind == "head" then
       v.text = r.text
     elseif r.kind == "fix" then
-      v.app, v.text, v.button = r.block.app.folder, r.text, r.button
+      v.app, v.fix = r.block.app.folder, r.block.err == "missing" and "noConfig" or "damaged"
     elseif r.kind == "shared" or r.kind == "field" then
       v.field = fieldView(r.field)
       local value, mixed = M.getValue(r), false
@@ -555,6 +561,72 @@ function fb_save(id, edits)
   return M.save()
 end
 
+-- The manifest's reset behind an action of the popup, which doesn't carry its id: the one that runs the same.
+local function resetOf(app, act)
+  for _, r in ipairs(app.man and app.man.resets or {}) do
+    if r.run == act.run then return r end
+  end
+end
+
+-- Every app as the popup shows it. The radio's active model counts for setup errors, with the sensors its
+-- file lists as found (the radio keeps them there), so a sensor the radio knows isn't reported missing.
+function fb_apps(current, names)
+  start()
+  active, sensorNames = current, type(names) == "table" and names or {}
+  getFieldInfo = function(name)
+    for _, n in ipairs(sensorNames) do if n == name then return { name = n } end end
+  end
+  local out = {}
+  for _, app in ipairs(apps) do
+    if app.ok then A.load(app) end
+    local v = { folder = app.folder, name = app.name or app.folder, version = app.version, ok = app.ok == true,
+                sign = A.needsSign(app) and true or false, icon = fstat(app.base .. "icon.png") ~= nil,
+                url = app.man and app.man.url, about = {}, setupErrors = {}, files = {}, resets = {} }
+    if not app.ok or app.loadError then v.problem = "update"
+    elseif app.noConfig then v.problem = "noConfig"
+    elseif app.err then v.problem = "damaged" end
+    for i, l in ipairs(A.popupLines(app)) do
+      if i > 1 and not l[2] and l[1] ~= v.url then v.about[#v.about + 1] = l[1] end
+    end
+    if not v.problem then
+      for _, e in ipairs(app.setupErrs or {}) do v.setupErrors[#v.setupErrors + 1] = tostring(e) end
+    end
+    for _, act in ipairs(A.popupActions(app)) do
+      if act.rows then
+        for _, r in ipairs(act.rows) do v.files[#v.files + 1] = { label = r[1], path = r[2] } end
+      elseif app.noConfig or app.err then
+        v.fix = true
+      else
+        -- a reset of the manifest, known only by its id: one without (older app versions) isn't offered
+        local r = resetOf(app, act)
+        if r and type(r.id) == "string" then v.resets[#v.resets + 1] = { id = r.id, label = act.label, ask = act.ask } end
+      end
+    end
+    A.unload(apps)
+    out[#out + 1] = v
+  end
+  return out
+end
+
+-- Runs one action of an app's popup: the reset with this id of its manifest, or without an id the action
+-- for a missing or damaged settings file.
+function fb_action(folder, id, current)
+  start()
+  active = current
+  for _, app in ipairs(apps) do
+    if app.folder == folder and app.ok and A.load(app) then
+      for _, act in ipairs(A.popupActions(app)) do
+        local r = act.run and resetOf(app, act)
+        if act.run and (id == nil and not r and (app.noConfig or app.err) or id ~= nil and r and r.id == id) then
+          if not A.runAction(apps, app, act) then error("rule:save failed, check SD card", 0) end
+          return true
+        end
+      end
+    end
+  end
+  error("invalid:action", 0)
+end
+
 function fb_fix(id, folder)
   start()
   local M = open(id)
@@ -595,6 +667,8 @@ function call<T>(run: LuaRun, name: string, ...args: unknown[]): T {
   } catch (e) {
     const msg = e instanceof LuaError ? e.message.replace(/^[^:]+: /, '') : '';
     if (msg.startsWith('missing:/SCRIPTS/FLIGHTBAG/')) throw new AppError('flightBagMissing');
+    if (msg === 'flightbag:old') throw new AppError('flightBagOld');
+    if (msg === 'flightbag:new') throw new AppError('flightBagNew');
     if (msg.startsWith('invalid:')) throw new AppError('invalidRequest', { what: msg.slice(8) });
     if (msg.startsWith('rule:')) throw new AppError('flightBagRule', { detail: printable(msg.slice(5)) });
     if (e instanceof LuaError) throw new AppError('flightBagFailed', { detail: printable(msg).slice(0, 300) });
@@ -710,6 +784,7 @@ function cleanView(v: FlightBagView): FlightBagView {
     rows: arr<RowView>(v.rows).map((r) => ({
       ...r,
       ...(r.text !== undefined ? { text: t(r.text) } : {}),
+      ...(r.fix !== undefined ? { fix: r.fix === 'noConfig' ? ('noConfig' as const) : ('damaged' as const) } : {}),
       ...(r.apps !== undefined ? { apps: arr<string>(r.apps) } : {}),
       ...(r.field
         ? {
@@ -784,6 +859,54 @@ export async function fixFlightBag(card: string, page: FlightBagPage, app: strin
   const { run } = await start(card);
   call(run, 'fb_fix', page, app);
   return commit(card, run.writes);
+}
+
+const PROBLEMS = ['update', 'noConfig', 'damaged'] as const;
+const RESET_ID = /^[a-z][\w-]{0,31}$/i;
+const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+// The apps on the card with what Flight Bag's popup shows for each.
+export async function flightBagApps(card: string): Promise<AppDetailView[]> {
+  const { run, current } = await start(card);
+  const names = current ? await sensorNames(card, current) : [];
+  return arr<AppDetailView>(call<unknown>(run, 'fb_apps', current ?? null, names)).map((a) => {
+    const url = t(a.url);
+    return {
+      folder: t(a.folder) ?? '',
+      name: t(a.name) ?? '',
+      ...opt('version', t(a.version)),
+      ok: a.ok === true,
+      sign: a.sign === true,
+      icon: a.icon === true && isSafeName(a.folder),
+      ...opt('url', url && /^github\.com\/[\w.-]+\/[\w.-]+$/.test(url) ? url : undefined),
+      about: arr<string>(a.about).map((s) => t(s) ?? ''),
+      ...opt('problem', PROBLEMS.find((p) => p === a.problem)),
+      setupErrors: arr<string>(a.setupErrors).map((s) => t(s) ?? ''),
+      files: arr<{ label: string; path: string }>(a.files).map((f) => ({ label: t(f.label) ?? '', path: t(f.path) ?? '' })),
+      fix: a.fix === true,
+      resets: arr<{ id: string; label: string; ask?: string }>(a.resets)
+        .filter((r) => typeof r.id === 'string' && RESET_ID.test(r.id))
+        .map((r) => ({ id: r.id, label: t(r.label) ?? '', ...opt('ask', t(r.ask)) })),
+    };
+  });
+}
+
+// Runs the reset of an app's manifest with this id, or without one the action for a missing or damaged
+// settings file, and puts what it wrote on the card.
+export async function flightBagAction(card: string, app: unknown, reset: unknown): Promise<string[]> {
+  if (typeof app !== 'string' || !isSafeName(app)) throw new AppError('invalidRequest', { what: 'app' });
+  if (reset !== undefined && (typeof reset !== 'string' || !RESET_ID.test(reset))) throw new AppError('invalidRequest', { what: 'reset' });
+  const { run, current } = await start(card);
+  call(run, 'fb_action', app, reset ?? null, current ?? null);
+  return commit(card, run.writes);
+}
+
+// An app's icon from the card: only /SCRIPTS/<app>/icon.png, small, and a PNG.
+export async function readAppIcon(card: string, app: string): Promise<Buffer> {
+  if (!isSafeName(app)) throw new AppError('invalidRequest', { what: 'app' });
+  const data = await readFile(join(card, 'SCRIPTS', app, 'icon.png')).catch(() => undefined);
+  if (!data || data.length > 256 * 1024 || !data.subarray(0, 8).equals(PNG)) throw new AppError('notFound');
+  return data;
 }
 
 // The dialog's battery as the page logic sees it; id is missing for a new battery.
