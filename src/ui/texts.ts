@@ -313,8 +313,6 @@ const en = {
   fbOff: 'Off',
   fbDefaultSound: 'Default',
   fbMixed: 'Mixed',
-  fbOffHint: (label: string) => `Off. Set a value to turn on “${label}”.`,
-  fbMixedHint: 'The apps have different values. Choose one for all of them.',
   fbPlay: (sound: string) => `Play ${sound}`,
   fbSound: (sound: string) => `Sound for ${sound}`,
   fbNoSettings: 'No settings file yet',

@@ -59,6 +59,17 @@ local function need(path)
   return chunk()
 end
 
+-- The language of this program's interface: Flight Bag's files and the apps give their texts in it
+-- (where they offer it; older ones are English only).
+local wanted = "en"
+function fb_lang(code) wanted = code end
+
+-- A text of Flight Bag's own language files, or the English of older files.
+local function text(area, id, english)
+  if type(A.t) == "function" then return A.t(area, id) end
+  return english
+end
+
 -- The interface of Flight Bag's files this program understands: { 1, >= 0 }, from apps.lua's A.API.
 local API_MAJOR = 1
 local function start()
@@ -67,6 +78,7 @@ local function start()
   local major = type(A.API) == "table" and A.API[1] or nil
   if type(major) ~= "number" or major < API_MAJOR then error("flightbag:old", 0) end
   if major > API_MAJOR then error("flightbag:new", 0) end
+  if type(A.setLang) == "function" then A.setLang(wanted) end
   apps = A.scan()
 end
 
@@ -183,6 +195,7 @@ local function describe(M, list, id)
         v.app = r.block.app.folder
       end
       v.value, v.mixed = value, mixed
+      v.hint = M.hintOf(r)   -- the row's help as the radio shows it: value filled in, or the note on a mixed value
     elseif r.kind == "sound" then
       local b = r.block
       v.app = b.app.folder
@@ -481,7 +494,9 @@ function fb_model(file, draft, action, names)
     if lip then
       if M.otherCells() > 0 then M.dropOtherCells() end
       if M.smallProfiles() > 0 then M.dropSmallProfiles() end
-      if M.parallelInvalid() then return { problem = "Parallel mode needs a profile with 2+ packs" } end
+      if M.parallelInvalid() then
+        return { problem = text("rules", "parallelNeedsTwo", "Parallel mode needs a profile with 2+ packs") }
+      end
     end
     local l, w = M.commit()
     if l and not M.writeLipo() then error("write", 0) end
@@ -498,6 +513,7 @@ function fb_model(file, draft, action, names)
   if lip then
     v.cellLimit = M.LIMITS.cells
     v.otherCells, v.smallProfiles, v.parallelInvalid = M.otherCells(), M.smallProfiles(), M.parallelInvalid()
+    v.parallelProblem = text("rules", "parallelNeedsTwo", "Parallel mode needs a profile with 2+ packs")
     v.assign = {}
     for i, it in ipairs(M.assignItems()) do
       local p = profile(lip.cfg, it.id)
@@ -599,7 +615,7 @@ function fb_apps(current, names)
       else
         -- a reset of the manifest, known only by its id: one without (older app versions) isn't offered
         local r = resetOf(app, act)
-        if r and type(r.id) == "string" then v.resets[#v.resets + 1] = { id = r.id, label = act.label, ask = act.ask } end
+        if r and type(r.id) == "string" then v.resets[#v.resets + 1] = { id = r.id, label = act.label, ask = act.ask, desc = r.desc } end
       end
     end
     A.unload(apps)
@@ -652,10 +668,12 @@ async function radioSettings(card: string): Promise<{ imperial: boolean; current
   }
 }
 
-async function start(card: string): Promise<{ run: LuaRun; current?: string }> {
+// lang: the language of the interface, for the texts the card's files give.
+async function start(card: string, lang: string): Promise<{ run: LuaRun; current?: string }> {
   const r = await radioSettings(card);
   const run = luaRun({ card, imperial: r.imperial });
   run.exec(GLUE, 'flightbag');
+  run.call('fb_lang', /^[a-z]{2}$/.test(lang) ? lang : 'en');
   return { run, ...opt('current', r.current) };
 }
 
@@ -784,6 +802,7 @@ function cleanView(v: FlightBagView): FlightBagView {
     rows: arr<RowView>(v.rows).map((r) => ({
       ...r,
       ...(r.text !== undefined ? { text: t(r.text) } : {}),
+      ...(r.hint !== undefined ? { hint: t(r.hint) } : {}),
       ...(r.fix !== undefined ? { fix: r.fix === 'noConfig' ? ('noConfig' as const) : ('damaged' as const) } : {}),
       ...(r.apps !== undefined ? { apps: arr<string>(r.apps) } : {}),
       ...(r.field
@@ -814,13 +833,13 @@ function cleanView(v: FlightBagView): FlightBagView {
 }
 
 // A page with the edits so far applied, as the page logic sees them (greyed rows, mixed values).
-export async function flightBagView(card: string, page: FlightBagPage, edits: Edits = {}): Promise<FlightBagView> {
-  const { run, current } = await start(card);
+export async function flightBagView(card: string, page: FlightBagPage, edits: Edits = {}, lang = 'en'): Promise<FlightBagView> {
+  const { run, current } = await start(card, lang);
   return cleanView(call<FlightBagView>(run, 'fb_view', page, edits, current ?? null));
 }
 
 export interface SaveResult {
-  problems: string[]; // English, "<app>: <what>"; nothing was written when there are any
+  problems: string[]; // "<app>: <what>" in the interface's language; nothing was written when there are any
   written: string[]; // card paths
 }
 
@@ -845,8 +864,8 @@ async function commit(card: string, writes: Map<string, Uint8Array>): Promise<st
 }
 
 // Saves a page with the user's edits through the page logic. Nothing is written while a value breaks a rule.
-export async function saveFlightBag(card: string, page: FlightBagPage, edits: Edits): Promise<SaveResult> {
-  const { run } = await start(card);
+export async function saveFlightBag(card: string, page: FlightBagPage, edits: Edits, lang = 'en'): Promise<SaveResult> {
+  const { run } = await start(card, lang);
   const problems = (call<unknown>(run, 'fb_save', page, edits) as unknown[] | undefined) ?? [];
   const list = Array.isArray(problems) ? problems.map((p) => printable(String(p))) : [];
   if (list.length > 0) return { problems: list, written: [] };
@@ -854,9 +873,9 @@ export async function saveFlightBag(card: string, page: FlightBagPage, edits: Ed
 }
 
 // Creates a missing settings file or replaces a damaged one with factory settings.
-export async function fixFlightBag(card: string, page: FlightBagPage, app: string): Promise<string[]> {
+export async function fixFlightBag(card: string, page: FlightBagPage, app: string, lang = 'en'): Promise<string[]> {
   if (!isSafeName(app)) throw new AppError('invalidRequest', { what: 'app' });
-  const { run } = await start(card);
+  const { run } = await start(card, lang);
   call(run, 'fb_fix', page, app);
   return commit(card, run.writes);
 }
@@ -866,8 +885,8 @@ const RESET_ID = /^[a-z][\w-]{0,31}$/i;
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 // The apps on the card with what Flight Bag's popup shows for each.
-export async function flightBagApps(card: string): Promise<AppDetailView[]> {
-  const { run, current } = await start(card);
+export async function flightBagApps(card: string, lang = 'en'): Promise<AppDetailView[]> {
+  const { run, current } = await start(card, lang);
   const names = current ? await sensorNames(card, current) : [];
   return arr<AppDetailView>(call<unknown>(run, 'fb_apps', current ?? null, names)).map((a) => {
     const url = t(a.url);
@@ -884,19 +903,19 @@ export async function flightBagApps(card: string): Promise<AppDetailView[]> {
       setupErrors: arr<string>(a.setupErrors).map((s) => t(s) ?? ''),
       files: arr<{ label: string; path: string }>(a.files).map((f) => ({ label: t(f.label) ?? '', path: t(f.path) ?? '' })),
       fix: a.fix === true,
-      resets: arr<{ id: string; label: string; ask?: string }>(a.resets)
+      resets: arr<{ id: string; label: string; ask?: string; desc?: string }>(a.resets)
         .filter((r) => typeof r.id === 'string' && RESET_ID.test(r.id))
-        .map((r) => ({ id: r.id, label: t(r.label) ?? '', ...opt('ask', t(r.ask)) })),
+        .map((r) => ({ id: r.id, label: t(r.label) ?? '', ...opt('ask', t(r.ask)), ...opt('desc', t(r.desc)) })),
     };
   });
 }
 
 // Runs the reset of an app's manifest with this id, or without one the action for a missing or damaged
 // settings file, and puts what it wrote on the card.
-export async function flightBagAction(card: string, app: unknown, reset: unknown): Promise<string[]> {
+export async function flightBagAction(card: string, app: unknown, reset: unknown, lang = 'en'): Promise<string[]> {
   if (typeof app !== 'string' || !isSafeName(app)) throw new AppError('invalidRequest', { what: 'app' });
   if (reset !== undefined && (typeof reset !== 'string' || !RESET_ID.test(reset))) throw new AppError('invalidRequest', { what: 'reset' });
-  const { run, current } = await start(card);
+  const { run, current } = await start(card, lang);
   call(run, 'fb_action', app, reset ?? null, current ?? null);
   return commit(card, run.writes);
 }
@@ -910,8 +929,8 @@ export async function readAppIcon(card: string, app: string): Promise<Buffer> {
 }
 
 // The dialog's battery as the page logic sees it; id is missing for a new battery.
-export async function batteryEdit(card: string, id: string | undefined, draft: unknown): Promise<BatteryEditView> {
-  const { run } = await start(card);
+export async function batteryEdit(card: string, id: string | undefined, draft: unknown, lang = 'en'): Promise<BatteryEditView> {
+  const { run } = await start(card, lang);
   const v = call<BatteryEditView>(run, 'fb_battery', id ?? null, draft ?? null, 'view');
   return {
     draft: cleanDraft(v.draft),
@@ -925,9 +944,9 @@ export async function batteryEdit(card: string, id: string | undefined, draft: u
   };
 }
 
-// Saves or deletes a battery through the page logic; problem (English) when its rules don't allow it.
-export async function changeBattery(card: string, id: string | undefined, draft: unknown, action: 'save' | 'delete'): Promise<{ problem?: string }> {
-  const { run } = await start(card);
+// Saves or deletes a battery through the page logic; problem (in the interface's language) when its rules don't allow it.
+export async function changeBattery(card: string, id: string | undefined, draft: unknown, action: 'save' | 'delete', lang = 'en'): Promise<{ problem?: string }> {
+  const { run } = await start(card, lang);
   const r = call<{ problem?: string }>(run, 'fb_battery', id ?? null, draft ?? null, action);
   if (r?.problem) return { problem: printable(String(r.problem)) };
   await commit(card, run.writes);
@@ -960,9 +979,9 @@ function cleanModelDraft(d: ModelDraft): ModelDraft {
 }
 
 // The dialog's model as the page logic sees it.
-export async function modelEdit(card: string, file: unknown, draft: unknown): Promise<ModelEditView> {
+export async function modelEdit(card: string, file: unknown, draft: unknown, lang = 'en'): Promise<ModelEditView> {
   const f = checkModelFile(file);
-  const { run } = await start(card);
+  const { run } = await start(card, lang);
   const v = call<ModelEditView>(run, 'fb_model', f, draft ?? null, 'view', await sensorNames(card, f));
   return {
     file: f,
@@ -985,6 +1004,7 @@ export async function modelEdit(card: string, file: unknown, draft: unknown): Pr
     ...opt('otherCells', num(v.otherCells)),
     ...opt('smallProfiles', num(v.smallProfiles)),
     ...(v.parallelInvalid !== undefined ? { parallelInvalid: v.parallelInvalid === true } : {}),
+    ...opt('parallelProblem', t(v.parallelProblem)),
     ...(v.sensors !== undefined
       ? {
           sensors: arr<SensorFieldView>(v.sensors).map((s) => ({
@@ -1002,10 +1022,10 @@ export async function modelEdit(card: string, file: unknown, draft: unknown): Pr
   };
 }
 
-// Saves or deletes a model's setup through the page logic; problem (English) when its rules don't allow it.
-export async function changeModel(card: string, file: unknown, draft: unknown, action: 'save' | 'delete'): Promise<{ problem?: string }> {
+// Saves or deletes a model's setup through the page logic; problem (in the interface's language) when its rules don't allow it.
+export async function changeModel(card: string, file: unknown, draft: unknown, action: 'save' | 'delete', lang = 'en'): Promise<{ problem?: string }> {
   const f = checkModelFile(file);
-  const { run } = await start(card);
+  const { run } = await start(card, lang);
   const r = call<{ problem?: string }>(run, 'fb_model', f, draft ?? null, action, await sensorNames(card, f));
   if (r?.problem) return { problem: printable(String(r.problem)) };
   await commit(card, run.writes);

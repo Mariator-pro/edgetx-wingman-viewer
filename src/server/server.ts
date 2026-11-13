@@ -311,11 +311,13 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
     };
   };
 
+  // The language Flight Bag's files on the card give their texts in: the interface's.
+  const fbLang = (asked: unknown) => (typeof asked === 'string' && /^[a-z]{2}$/.test(asked) ? asked : (s.ui?.lang ?? 'en'));
   // A Flight Bag request: the connected card and the page.
   const flightBagArgs = async (req: IncomingMessage) => {
-    const b = await body<{ volume?: unknown; page?: unknown; edits?: unknown; app?: unknown }>(req);
+    const b = await body<{ volume?: unknown; page?: unknown; edits?: unknown; app?: unknown; lang?: unknown }>(req);
     if (!isFlightBagPage(b.page)) throw new HttpError(400, 'invalidRequest', { what: 'page' });
-    return { card: await cardAt(b.volume), page: b.page, edits: checkEdits(b.edits), app: b.app };
+    return { card: await cardAt(b.volume), page: b.page, edits: checkEdits(b.edits), app: b.app, lang: fbLang(b.lang) };
   };
   // After Flight Bag wrote to the card: its settings into the app's copy, and the flights again with them.
   const afterFlightBag = async (c: RadioCard) => {
@@ -426,63 +428,63 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
       });
     },
     'POST /api/flightbag/view': async (req) => {
-      const { card, page, edits } = await flightBagArgs(req);
-      return flightBagView(card.volume, page, edits);
+      const { card, page, edits, lang } = await flightBagArgs(req);
+      return flightBagView(card.volume, page, edits, lang);
     },
     'POST /api/flightbag/save': async (req) => {
-      const { card, page, edits } = await flightBagArgs(req);
+      const { card, page, edits, lang } = await flightBagArgs(req);
       return op('flightBag', async () => {
-        const r = await saveFlightBag(card.volume, page, edits);
+        const r = await saveFlightBag(card.volume, page, edits, lang);
         if (r.written.length > 0) await afterFlightBag(card);
         return { problems: r.problems };
       });
     },
     'POST /api/flightbag/fix': async (req) => {
-      const { card, page, app } = await flightBagArgs(req);
+      const { card, page, app, lang } = await flightBagArgs(req);
       if (typeof app !== 'string') throw new HttpError(400, 'invalidRequest', { what: 'app' });
       return op('flightBag', async () => {
-        await fixFlightBag(card.volume, page, app);
+        await fixFlightBag(card.volume, page, app, lang);
         await afterFlightBag(card);
       });
     },
     'POST /api/flightbag/battery': async (req) => {
-      const b = await body<{ volume?: unknown; id?: unknown; draft?: unknown; action?: unknown }>(req);
+      const b = await body<{ volume?: unknown; id?: unknown; draft?: unknown; action?: unknown; lang?: unknown }>(req);
       const card = await cardAt(b.volume);
       const id = typeof b.id === 'string' && b.id.length <= 32 ? b.id : undefined;
       const draft = checkDraft(b.draft);
       if (b.action === 'save' || b.action === 'delete') {
         const action = b.action;
         return op('flightBag', async () => {
-          const r = await changeBattery(card.volume, id, draft, action);
+          const r = await changeBattery(card.volume, id, draft, action, fbLang(b.lang));
           if (!r.problem) await afterFlightBag(card);
           return r;
         });
       }
-      return batteryEdit(card.volume, id, draft);
+      return batteryEdit(card.volume, id, draft, fbLang(b.lang));
     },
     'POST /api/flightbag/model': async (req) => {
-      const b = await body<{ volume?: unknown; file?: unknown; draft?: unknown; action?: unknown }>(req);
+      const b = await body<{ volume?: unknown; file?: unknown; draft?: unknown; action?: unknown; lang?: unknown }>(req);
       const card = await cardAt(b.volume);
       const draft = checkDraft(b.draft);
       if (b.action === 'save' || b.action === 'delete') {
         const action = b.action;
         return op('flightBag', async () => {
-          const r = await changeModel(card.volume, b.file, draft, action);
+          const r = await changeModel(card.volume, b.file, draft, action, fbLang(b.lang));
           if (!r.problem) await afterFlightBag(card);
           return r;
         });
       }
-      return modelEdit(card.volume, b.file, draft);
+      return modelEdit(card.volume, b.file, draft, fbLang(b.lang));
     },
     'GET /api/flightbag/apps': async (_req, q) => {
       const card = await cardAt(q.get('volume'));
-      return flightBagApps(card.volume);
+      return flightBagApps(card.volume, fbLang(q.get('lang')));
     },
     'POST /api/flightbag/action': async (req) => {
-      const b = await body<{ volume?: unknown; app?: unknown; reset?: unknown }>(req);
+      const b = await body<{ volume?: unknown; app?: unknown; reset?: unknown; lang?: unknown }>(req);
       const card = await cardAt(b.volume);
       return op('flightBag', async () => {
-        await flightBagAction(card.volume, b.app, b.reset ?? undefined);
+        await flightBagAction(card.volume, b.app, b.reset ?? undefined, fbLang(b.lang));
         await afterFlightBag(card);
       });
     },

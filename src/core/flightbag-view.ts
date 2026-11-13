@@ -38,6 +38,7 @@ export interface RowView {
   field?: FieldView;
   value?: unknown; // missing while a shared value differs per app
   mixed?: boolean;
+  hint?: string; // the row's help as the page logic gives it, in the interface's language
   sound?: { key: string; label: string; hint?: string; options: SoundOptionView[]; value: string; play?: string };
 }
 
@@ -62,7 +63,7 @@ export interface AppDetailView {
   setupErrors: string[]; // of the radio's active model, English from the app
   files: { label: string; path: string }[];
   fix: boolean; // the missing or damaged settings file can be created or reset
-  resets: { id: string; label: string; ask?: string }[]; // by the manifest's id; label and question English from it
+  resets: { id: string; label: string; ask?: string; desc?: string }[]; // by the manifest's id; label, question and what it does in the interface's language
 }
 
 export interface FlightBagView {
@@ -201,6 +202,7 @@ export interface ModelEditView {
   otherCells?: number; // assigned batteries with other cells, dropped on saving
   smallProfiles?: number; // assigned batteries with fewer than 2 packs in parallel mode, dropped on saving
   parallelInvalid?: boolean;
+  parallelProblem?: string; // the message for it
   sensors?: SensorFieldView[];
   customSensors?: boolean;
   modules?: ModuleView[];

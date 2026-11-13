@@ -307,8 +307,6 @@ export const de: Texts = {
   fbOff: 'Aus',
   fbDefaultSound: 'Standard',
   fbMixed: 'Gemischt',
-  fbOffHint: (label) => `Aus. Stelle einen Wert ein, um „${label}“ einzuschalten.`,
-  fbMixedHint: 'Die Apps haben verschiedene Werte. Wähle einen für alle.',
   fbPlay: (sound) => `${sound} abspielen`,
   fbSound: (sound) => `Ton für ${sound}`,
   fbNoSettings: 'Noch keine Einstellungsdatei',

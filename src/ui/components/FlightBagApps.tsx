@@ -2,7 +2,7 @@ import { Alert, Button, Modal } from '@heroui/react';
 import { useState } from 'react';
 import type { AppDetailView } from '../../core/flightbag-view.ts';
 import { post, tokenUrl } from '../api.ts';
-import { resetText, ruleText } from '../flightbagTexts.ts';
+import { resetText } from '../flightbagTexts.ts';
 import { usePrefs } from '../usePrefs.ts';
 import { Confirm } from './Confirm.tsx';
 
@@ -90,9 +90,9 @@ const about = (s: string) => s.replace(/^\(c\)\s*/i, '© ').replace(/\s{2,}/g, '
 // onAction runs the reset with this id, or without one the fix of a missing or damaged settings file
 function AppDialog(props: { volume: string; app: AppDetailView; onClose: () => void; onAction: (reset: string | undefined, label: string) => void }) {
   const { volume, app, onClose, onAction } = props;
-  const { t, lang } = usePrefs();
+  const { t } = usePrefs();
   const [ask, setAsk] = useState<{ reset?: string; label: string; title: string; text: string }>();
-  const resets = app.resets.map((r) => ({ reset: r.id, ...resetText(lang, app.folder, r) }));
+  const resets = app.resets.map((r) => ({ reset: r.id, ...resetText(r) }));
   const fix = () => {
     if (app.problem === 'damaged') setAsk({ label: t.fbReset, title: t.fbResetTitle(app.name), text: t.fbResetText });
     else onAction(undefined, t.fbCreate);
@@ -134,7 +134,7 @@ function AppDialog(props: { volume: string; app: AppDetailView; onClose: () => v
                     <Alert.Description>
                       <ul className="m-0 pl-4">
                         {app.setupErrors.map((e) => (
-                          <li key={e}>{ruleText(lang, e)}</li>
+                          <li key={e}>{e}</li>
                         ))}
                       </ul>
                     </Alert.Description>

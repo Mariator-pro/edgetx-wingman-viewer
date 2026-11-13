@@ -2,7 +2,6 @@ import { Button, Card, Chip, Input, Label, Modal, NumberField, Spinner, Table, T
 import { Fragment, useEffect, useRef, useState } from 'react';
 import type { BatteriesView, BatteryDraft, BatteryEditView, BatteryView, Limit, PackDraft } from '../../core/flightbag-view.ts';
 import { errorText, post } from '../api.ts';
-import { ruleText } from '../flightbagTexts.ts';
 import type { Lang } from '../texts.ts';
 import { usePrefs } from '../usePrefs.ts';
 import { Confirm } from './Confirm.tsx';
@@ -200,7 +199,7 @@ function BatteryDialog(props: {
     const n = ++asked.current;
     const timer = setTimeout(
       () => {
-        post<BatteryEditView>('/api/flightbag/battery', { volume, id, draft }).then(
+        post<BatteryEditView>('/api/flightbag/battery', { volume, id, draft, lang }).then(
           (e) => {
             if (n !== asked.current) return;
             setEdit(e);
@@ -216,7 +215,7 @@ function BatteryDialog(props: {
       draft ? 150 : 0,
     );
     return () => clearTimeout(timer);
-  }, [volume, id, draft, t]);
+  }, [volume, id, draft, t, lang]);
 
   if (!draft || !edit) {
     return null;
@@ -232,8 +231,8 @@ function BatteryDialog(props: {
     run(async () => {
       setBusy(true);
       try {
-        const r = await post<{ problem?: string }>('/api/flightbag/battery', { volume, id, draft, action });
-        if (r.problem) setError(ruleText(lang, r.problem));
+        const r = await post<{ problem?: string }>('/api/flightbag/battery', { volume, id, draft, action, lang });
+        if (r.problem) setError(r.problem);
         else onDone(action === 'save' ? t.fbBatterySaved : t.fbBatteryDeleted);
       } finally {
         setBusy(false);
@@ -344,7 +343,7 @@ function BatteryDialog(props: {
                   ))}
                 </div>
               </div>
-              {edit.archiveLocked && <span className="text-sm text-muted">{ruleText(lang, edit.archiveLocked)}</span>}
+              {edit.archiveLocked && <span className="text-sm text-muted">{edit.archiveLocked}</span>}
               <div>
                 <Button
                   variant="outline"
@@ -359,7 +358,7 @@ function BatteryDialog(props: {
                 </Button>
               </div>
             </div>
-            {(error || (edit.invalid && edit.dirty)) && <p className="m-0 text-sm text-danger">{error ?? ruleText(lang, edit.invalid!)}</p>}
+            {(error || (edit.invalid && edit.dirty)) && <p className="m-0 text-sm text-danger">{error ?? edit.invalid!}</p>}
           </Modal.Body>
           <Modal.Footer className="flex flex-wrap justify-between gap-2">
             <span>
@@ -379,7 +378,7 @@ function BatteryDialog(props: {
               </Button>
             </span>
           </Modal.Footer>
-          {edit.deleteBlocked && <p className="m-0 px-6 pb-4 text-sm text-muted">{ruleText(lang, edit.deleteBlocked)}</p>}
+          {edit.deleteBlocked && <p className="m-0 px-6 pb-4 text-sm text-muted">{edit.deleteBlocked}</p>}
         </Modal.Dialog>
       </Modal.Container>
       {ask === 'delete' && (

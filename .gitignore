@@ -15,14 +15,6 @@ Desktop.ini
 *.swo
 *~
 
-# Claude Code
-CLAUDE.md
-.claude
-
-# Folder
-context/
-prototypes/
-
 # Node
 node_modules/
 dist/
@@ -38,5 +30,9 @@ secrets.json
 # Desktop builds
 release/
 
-# Local scripts
-scripts/screenshots.ts
+# Claude Code: personal settings stay local
+.claude/settings.local.json
+.claude/*.lock
+
+# Third-party code kept only as a reference (see context/references.md)
+context/references/
