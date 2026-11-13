@@ -65,7 +65,7 @@ local wanted = "en"
 function fb_lang(code) wanted = code end
 
 -- A text of Flight Bag's own language files, or the English of older files.
-local function text(area, id, english)
+local function langText(area, id, english)
   if type(A.t) == "function" then return A.t(area, id) end
   return english
 end
@@ -184,6 +184,7 @@ local function describe(M, list, id)
       v.text = r.text
     elseif r.kind == "fix" then
       v.app, v.fix = r.block.app.folder, r.block.err == "missing" and "noConfig" or "damaged"
+      v.text, v.button, v.ask = r.text, r.button, r.ask
     elseif r.kind == "shared" or r.kind == "field" then
       v.field = fieldView(r.field)
       local value, mixed = M.getValue(r), false
@@ -495,7 +496,7 @@ function fb_model(file, draft, action, names)
       if M.otherCells() > 0 then M.dropOtherCells() end
       if M.smallProfiles() > 0 then M.dropSmallProfiles() end
       if M.parallelInvalid() then
-        return { problem = text("rules", "parallelNeedsTwo", "Parallel mode needs a profile with 2+ packs") }
+        return { problem = langText("rules", "parallelNeedsTwo", "Parallel mode needs a profile with 2+ packs") }
       end
     end
     local l, w = M.commit()
@@ -513,7 +514,7 @@ function fb_model(file, draft, action, names)
   if lip then
     v.cellLimit = M.LIMITS.cells
     v.otherCells, v.smallProfiles, v.parallelInvalid = M.otherCells(), M.smallProfiles(), M.parallelInvalid()
-    v.parallelProblem = text("rules", "parallelNeedsTwo", "Parallel mode needs a profile with 2+ packs")
+    v.parallelProblem = langText("rules", "parallelNeedsTwo", "Parallel mode needs a profile with 2+ packs")
     v.assign = {}
     for i, it in ipairs(M.assignItems()) do
       local p = profile(lip.cfg, it.id)
@@ -611,7 +612,7 @@ function fb_apps(current, names)
       if act.rows then
         for _, r in ipairs(act.rows) do v.files[#v.files + 1] = { label = r[1], path = r[2] } end
       elseif app.noConfig or app.err then
-        v.fix = true
+        v.fix, v.fixLabel, v.fixAsk = true, act.label, act.ask
       else
         -- a reset of the manifest, known only by its id: one without (older app versions) isn't offered
         local r = resetOf(app, act)
@@ -803,6 +804,8 @@ function cleanView(v: FlightBagView): FlightBagView {
       ...r,
       ...(r.text !== undefined ? { text: t(r.text) } : {}),
       ...(r.hint !== undefined ? { hint: t(r.hint) } : {}),
+      ...(r.button !== undefined ? { button: t(r.button) } : {}),
+      ...(r.ask !== undefined ? { ask: t(r.ask) } : {}),
       ...(r.fix !== undefined ? { fix: r.fix === 'noConfig' ? ('noConfig' as const) : ('damaged' as const) } : {}),
       ...(r.apps !== undefined ? { apps: arr<string>(r.apps) } : {}),
       ...(r.field
@@ -903,6 +906,8 @@ export async function flightBagApps(card: string, lang = 'en'): Promise<AppDetai
       setupErrors: arr<string>(a.setupErrors).map((s) => t(s) ?? ''),
       files: arr<{ label: string; path: string }>(a.files).map((f) => ({ label: t(f.label) ?? '', path: t(f.path) ?? '' })),
       fix: a.fix === true,
+      ...opt('fixLabel', t(a.fixLabel)),
+      ...opt('fixAsk', t(a.fixAsk)),
       resets: arr<{ id: string; label: string; ask?: string; desc?: string }>(a.resets)
         .filter((r) => typeof r.id === 'string' && RESET_ID.test(r.id))
         .map((r) => ({ id: r.id, label: t(r.label) ?? '', ...opt('ask', t(r.ask)), ...opt('desc', t(r.desc)) })),

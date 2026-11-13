@@ -5,20 +5,25 @@ import type { Texts } from './texts.ts';
 // reads them as local time, which is what the pilot saw.
 export const localDate = (stamp: string) => new Date(stamp);
 
-export function dateTime(iso: string, locale: string): string {
-  return new Date(iso).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
+// Dates and times the same in every language: 2026-10-30 and 17:45 (24 h), as the radio and the apps write them.
+const two = (n: number) => String(n).padStart(2, '0');
+const isoDay = (d: Date) => `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}`;
+const clock = (d: Date, seconds = false) => `${two(d.getHours())}:${two(d.getMinutes())}${seconds ? `:${two(d.getSeconds())}` : ''}`;
+
+// 2026-10-30 17:45
+export function dateTime(iso: string): string {
+  const d = new Date(iso);
+  return `${isoDay(d)} ${clock(d)}`;
 }
 
-export function day(stamp: string, locale: string): string {
-  return localDate(stamp).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+// 2026-10-30
+export function day(stamp: string): string {
+  return isoDay(localDate(stamp));
 }
 
-export function shortDay(stamp: string, locale: string): string {
-  return localDate(stamp).toLocaleDateString(locale, { dateStyle: 'medium' });
-}
-
-export function time(stamp: string, locale: string, seconds = false): string {
-  return localDate(stamp).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', ...(seconds ? { second: '2-digit' } : {}) });
+// 17:45, with seconds 17:45:44
+export function time(stamp: string, seconds = false): string {
+  return clock(localDate(stamp), seconds);
 }
 
 // 1:16 or 1:02:05
@@ -48,8 +53,8 @@ export function since(stamp: string, start: string): string {
 
 export const radioLabel = (t: Texts, f: FlightView) => (f.board === 'imported' ? t.imported : f.radio);
 
-export const flightLabel = (t: Texts, f: FlightView) =>
-  f.hasDate ? `${f.model}, ${day(f.start, t.locale)} ${time(f.start, t.locale)}` : `${f.model}, ${f.file}`;
+export const flightLabel = (f: FlightView) =>
+  f.hasDate ? `${f.model}, ${day(f.start)} ${time(f.start)}` : `${f.model}, ${f.file}`;
 
 // Seconds of the track as time from takeoff (arming), the one time the Viewer shows: "+1:23", before it "−0:12"
 export function fromTakeoff(s: number, takeoff: number): string {

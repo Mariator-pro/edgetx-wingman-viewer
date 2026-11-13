@@ -34,6 +34,8 @@ export interface RowView {
   apps?: string[]; // shared row: all apps it sets
   text?: string; // head: the app's name
   fix?: 'noConfig' | 'damaged'; // fix: the app's settings file is missing or damaged
+  button?: string; // fix: the button (Create, Recreate), in the interface's language
+  ask?: string; // fix: the question before the damaged file is replaced
   disabled?: boolean; // greyed out, e.g. Strength while vibration is off
   field?: FieldView;
   value?: unknown; // missing while a shared value differs per app
@@ -62,7 +64,9 @@ export interface AppDetailView {
   problem?: 'update' | 'noConfig' | 'damaged';
   setupErrors: string[]; // of the radio's active model, English from the app
   files: { label: string; path: string }[];
-  fix: boolean; // the missing or damaged settings file can be created or reset
+  fix: boolean; // the missing or damaged settings file can be created or recreated
+  fixLabel?: string; // its button (Create, Recreate) and question, in the interface's language
+  fixAsk?: string;
   resets: { id: string; label: string; ask?: string; desc?: string }[]; // by the manifest's id; label, question and what it does in the interface's language
 }
 

@@ -26,8 +26,7 @@ export function LastFlights(props: { list: LastFlightView[]; board: string; flig
 
   const when = (e: LastFlightView) => {
     if (!e.date) return e.time || t.fbNoClock;
-    const day = new Date(`${e.date}T12:00:00`).toLocaleDateString(t.locale, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
-    return e.time ? `${day}, ${e.time}` : day;
+    return e.time ? `${e.date} ${e.time}` : e.date;
   };
   const copy = (e: LastFlightView) =>
     void navigator.clipboard.writeText(`${e.latText}, ${e.lonText}`).then(

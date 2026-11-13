@@ -18,7 +18,6 @@ export function Batteries(props: { volume: string; view: BatteriesView; run: Run
   if (view.broken) return <p className="m-0 text-warning">{t.fbBroken}</p>;
 
   const levels = (b: BatteryView) => t.fbLimits(b.warnPct ?? view.warnPct, b.critPct ?? view.critPct) + (b.warnPct === undefined ? ` (${t.fbGeneral})` : '');
-  const day = (d?: string) => (d ? new Date(`${d}T12:00:00`).toLocaleDateString(t.locale) : '–');
 
   return (
     <div className="flex flex-col gap-6">
@@ -67,7 +66,7 @@ export function Batteries(props: { volume: string; view: BatteriesView; run: Run
                         <Table.Cell className="tabular-nums">{p.wear} %</Table.Cell>
                         <Table.Cell className="tabular-nums">{p.totalMah !== undefined ? `${p.totalMah} mAh` : '–'}</Table.Cell>
                         <Table.Cell className="tabular-nums">{p.minVCell !== undefined ? `${p.minVCell.toLocaleString(t.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V` : '–'}</Table.Cell>
-                        <Table.Cell>{day(p.lastUsed)}</Table.Cell>
+                        <Table.Cell>{p.lastUsed ?? '–'}</Table.Cell>
                         <Table.Cell>{p.buyDate ?? '–'}</Table.Cell>
                       </Table.Row>
                     ))}
@@ -134,15 +133,16 @@ function Num(props: { label: string; shown?: boolean; wide?: boolean; value?: nu
   );
 }
 
-// A month as Lipo Nanny stores it (2026-03); 03/2026 and 3.2026 work too. Typed text stays until it is a whole
+// A month as Lipo Nanny stores it (2026-03); 03/2026 and 3.2026 can be typed too. Typed text stays until it is a whole
 // month from 2010 to 2099; leaving the field shows the stored month again (a month can't be cleared, as on the radio).
 function MonthField(props: { label: string; value?: string; onChange: (v: string) => void }) {
   const { t } = usePrefs();
-  const [text, setText] = useState(props.value ?? '');
+  const shown = props.value ?? '';
+  const [text, setText] = useState(shown);
   const typing = useRef(false);
   useEffect(() => {
-    if (!typing.current) setText(props.value ?? '');
-  }, [props.value]);
+    if (!typing.current) setText(shown);
+  }, [shown]);
   const month = (v: string) => {
     const iso = /^(\d{4})-(\d{1,2})$/.exec(v.trim());
     const other = /^(\d{1,2})[./](\d{4})$/.exec(v.trim());
@@ -166,7 +166,7 @@ function MonthField(props: { label: string; value?: string; onChange: (v: string
       }}
       onBlur={() => {
         typing.current = false;
-        setText(props.value ?? '');
+        setText(shown);
       }}
     >
       <Input placeholder={t.fbMonthExample} />
@@ -359,6 +359,7 @@ function BatteryDialog(props: {
               </div>
             </div>
             {(error || (edit.invalid && edit.dirty)) && <p className="m-0 text-sm text-danger">{error ?? edit.invalid!}</p>}
+            {!edit.isNew && edit.deleteBlocked && <p className="m-0 text-sm text-muted">{edit.deleteBlocked}</p>}
           </Modal.Body>
           <Modal.Footer className="flex flex-wrap justify-between gap-2">
             <span>
@@ -378,7 +379,6 @@ function BatteryDialog(props: {
               </Button>
             </span>
           </Modal.Footer>
-          {edit.deleteBlocked && <p className="m-0 px-6 pb-4 text-sm text-muted">{edit.deleteBlocked}</p>}
         </Modal.Dialog>
       </Modal.Container>
       {ask === 'delete' && (

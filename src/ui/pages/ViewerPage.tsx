@@ -48,7 +48,7 @@ export function ViewerPage(props: {
         if (gone) return;
         setFlight(f);
         setMissing(false);
-        onLabel(f.hasDate ? `${f.model}, ${time(f.start, t.locale)}` : f.model);
+        onLabel(f.hasDate ? `${f.model}, ${time(f.start)}` : f.model);
       },
       () => !gone && setMissing(true),
     );
@@ -80,7 +80,7 @@ export function ViewerPage(props: {
     setTag('');
     setTagOpen(false);
   };
-  const subtitle = f.sample ? t.sampleText : [f.hasDate ? `${day(f.start, t.locale)}, ${time(f.start, t.locale)}` : f.file, radioLabel(t, f)].join(' · ');
+  const subtitle = f.sample ? t.sampleText : [f.hasDate ? `${day(f.start)} ${time(f.start)}` : f.file, radioLabel(t, f)].join(' · ');
   const facts = [
     t.flightDuration(duration(f.duration)),
     t.maxDistance(distance(f.maxDistance, t.locale)),
@@ -274,7 +274,7 @@ function PackChip({ pack }: { pack: PackView }) {
   if (pack.capacity !== undefined) rows.push([t.packCapacity, `${pack.cells ? `${pack.cells}S ` : ''}${pack.capacity.toLocaleString(t.locale)} mAh`]);
   if (pack.cycles !== undefined) rows.push([t.packCycles, pack.cycles.toLocaleString(t.locale)]);
   if (pack.wear !== undefined) rows.push([t.packWear, `${pack.wear} %`]);
-  if (pack.lastUsed) rows.push([t.packLastUsed, new Date(`${pack.lastUsed}T12:00:00`).toLocaleDateString(t.locale, { dateStyle: 'medium' })]);
+  if (pack.lastUsed) rows.push([t.packLastUsed, pack.lastUsed]);
   return (
     <Popover>
       <Button size="sm" variant="tertiary" className={`${BADGE} gap-1.5 font-medium`} aria-label={`${t.packDetails}: ${name}`}>

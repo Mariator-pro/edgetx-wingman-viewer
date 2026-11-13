@@ -9,6 +9,7 @@ import { FlightBagApps } from '../components/FlightBagApps.tsx';
 import { LastFlights } from '../components/LastFlights.tsx';
 import { Models } from '../components/Models.tsx';
 import { PlayIcon } from '../components/icons.tsx';
+import { resetText } from '../flightbagTexts.ts';
 import { usePrefs } from '../usePrefs.ts';
 
 type Run = (fn: () => Promise<unknown>) => void;
@@ -98,20 +99,21 @@ export function FlightBagPage(props: {
       }
     });
 
-  const fix = (r: RowView, name: string) => {
+  const fix = (r: RowView) => {
     const go = () =>
       run(async () => {
         await post('/api/flightbag/fix', { volume: radio!.volume, page, app: r.app, lang });
         setReloads((n) => n + 1);
       });
-    if (r.fix === 'damaged') setAsk({ title: t.fbResetTitle(name), text: t.fbResetText, confirm: t.fbReset, then: go });
-    else go();
+    if (r.ask) {
+      const q = resetText({ label: r.button ?? '', ask: r.ask });
+      setAsk({ title: q.title, text: q.text, confirm: q.label, then: go });
+    } else go();
   };
 
   // only for a moment: without a radio the app leaves this page
   if (!radio) return null;
 
-  const appName = (folder?: string) => view?.apps.find((a) => a.folder === folder)?.name ?? folder ?? '';
   const sections = view ? group(view.rows) : [];
 
   return (
@@ -226,9 +228,9 @@ export function FlightBagPage(props: {
             {s.rows.map((r) =>
               r.kind === 'fix' ? (
                 <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                  <span className="text-warning">{r.fix === 'noConfig' ? t.fbNoSettings : t.fbDamaged}</span>
-                  <Button variant="outline" onPress={() => fix(r, appName(r.app))}>
-                    {r.fix === 'noConfig' ? t.fbCreate : t.fbReset}
+                  <span className="text-warning">{r.text}</span>
+                  <Button variant="outline" onPress={() => fix(r)}>
+                    {r.button}
                   </Button>
                 </div>
               ) : (

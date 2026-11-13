@@ -6,7 +6,7 @@ import { post } from '../api.ts';
 import { Confirm } from '../components/Confirm.tsx';
 import { ColumnsIcon, MoreIcon, SlidersIcon, SortIcon } from '../components/icons.tsx';
 import { Mascot } from '../components/Mascot.tsx';
-import { duration, flightLabel, radioLabel, shortDay, time } from '../format.ts';
+import { day, duration, flightLabel, radioLabel, time } from '../format.ts';
 import type { Texts } from '../texts.ts';
 import { usePrefs } from '../usePrefs.ts';
 
@@ -172,12 +172,7 @@ export function FlightsPage(props: { flights?: FlightView[]; run: Run; onOpen: (
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <h1 className="m-0 text-3xl font-bold tracking-tight">{showDeleted ? t.recentlyDeleted : t.flights}</h1>
-          <Chip size="sm" aria-label={t.flightCount(shown.length)}>
-            {shown.length}
-          </Chip>
-        </div>
+        <h1 className="m-0 text-3xl font-bold tracking-tight">{showDeleted ? t.recentlyDeleted : t.flights}</h1>
         <Mascot />
         <Button variant="outline" onPress={onSample}>
           {t.openSample}
@@ -373,14 +368,14 @@ export function FlightsPage(props: { flights?: FlightView[]; run: Run; onOpen: (
               </Table.Header>
               <Table.Body>
                 {shown.map((f) => {
-                  const label = flightLabel(t, f);
+                  const label = flightLabel(f);
                   return (
                     <Table.Row key={f.key} id={f.key} textValue={label} className="cursor-pointer">
                       <Table.Cell className="pr-0">
                         <SelectBox label={t.selectFlight(label)} />
                       </Table.Cell>
-                      <Table.Cell>{f.hasDate ? shortDay(f.start, t.locale) : '–'}</Table.Cell>
-                      {shows('time') ? <Table.Cell className="font-mono">{f.hasDate ? time(f.start, t.locale) : '–'}</Table.Cell> : null}
+                      <Table.Cell>{f.hasDate ? day(f.start) : '–'}</Table.Cell>
+                      {shows('time') ? <Table.Cell className="font-mono">{f.hasDate ? time(f.start) : '–'}</Table.Cell> : null}
                       <Table.Cell className="font-medium">{f.model}</Table.Cell>
                       {shows('radio') ? <Table.Cell className="text-muted">{radioLabel(t, f)}</Table.Cell> : null}
                       {shows('duration') ? <Table.Cell className="text-right tabular-nums">{duration(f.duration)}</Table.Cell> : null}

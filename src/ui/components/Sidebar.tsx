@@ -156,7 +156,7 @@ export function Sidebar(props: {
         </div>
 
         <div className="flex flex-col gap-2 rounded-xl bg-zinc-800 p-3">
-          <span className="text-xs text-balance text-zinc-400">{state?.lastSync ? t.lastCopied(dateTime(state.lastSync, t.locale).replaceAll(' ', '\u00a0')) : t.notCopied}</span>
+          <span className="text-xs text-balance text-zinc-400">{state?.lastSync ? t.lastCopied(dateTime(state.lastSync).replaceAll(' ', '\u00a0')) : t.notCopied}</span>
           <input
             ref={file}
             type="file"

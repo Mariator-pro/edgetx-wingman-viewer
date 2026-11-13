@@ -37,13 +37,13 @@ export function Models(props: { volume: string; view: ModelsView; run: Run; noti
       {configured.length > 0 && (
         <Table>
           <Table.ScrollContainer>
-            <Table.Content aria-label={t.fbPages.models} onRowAction={(k) => setEditing({ file: String(k) })} className="whitespace-nowrap">
+            <Table.Content aria-label={t.fbPages.models} onRowAction={(k) => setEditing({ file: String(k) })}>
               <Table.Header>
                 <Table.Column isRowHeader>{t.fbModel}</Table.Column>
                 {view.lipo ? <Table.Column>{t.fbBattery}</Table.Column> : null}
                 {view.lipo ? <Table.Column>{t.fbModelBatteries}</Table.Column> : null}
                 {view.lipo ? <Table.Column>{t.fbSensors}</Table.Column> : null}
-                {view.wingman ? <Table.Column className="w-full">{t.fbInWingman}</Table.Column> : <Table.Column className="w-full">{''}</Table.Column>}
+                {view.wingman ? <Table.Column className="xl:w-full">{t.fbInWingman}</Table.Column> : <Table.Column className="xl:w-full">{''}</Table.Column>}
                 <Table.Column className="w-0">
                   <span className="sr-only">{t.colActions}</span>
                 </Table.Column>
@@ -52,27 +52,41 @@ export function Models(props: { volume: string; view: ModelsView; run: Run; noti
                 {configured.map((m) => (
                   <Table.Row key={m.file} id={m.file} textValue={m.name} className="cursor-pointer">
                     <Table.Cell>
-                      <span className="flex items-center gap-2 font-medium">
+                      <span className="flex flex-col items-start gap-1 font-medium">
                         {m.name}
                         {m.active && (
-                          <Chip size="sm" variant="soft" color="success">
+                          <Chip size="sm" variant="soft" color="success" className="whitespace-nowrap">
                             {t.fbActiveModel}
                           </Chip>
                         )}
                         {!m.onCard && (
-                          <Chip size="sm" variant="soft" color="warning">
+                          <Chip size="sm" variant="soft" color="warning" className="whitespace-nowrap">
                             {t.fbNotOnCard}
                           </Chip>
                         )}
                       </span>
                     </Table.Cell>
-                    {view.lipo ? <Table.Cell>{m.cells !== undefined ? `${m.cells}S${m.parallel ? `, ${t.fbParallelShort}` : ''}` : '–'}</Table.Cell> : null}
-                    {view.lipo ? <Table.Cell className="text-muted">{m.batteries?.length ? m.batteries.join(', ') : '–'}</Table.Cell> : null}
+                    {view.lipo ? <Table.Cell className="whitespace-nowrap">{m.cells !== undefined ? `${m.cells}S${m.parallel ? `, ${t.fbParallelShort}` : ''}` : '–'}</Table.Cell> : null}
+                    {view.lipo ? (
+                      <Table.Cell className="text-muted">
+                        {m.batteries?.length ? (
+                          <div className="flex flex-col gap-1">
+                            {m.batteries.map((b, i) => (
+                              <span key={i} className="xl:whitespace-nowrap">
+                                {b}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          '–'
+                        )}
+                      </Table.Cell>
+                    ) : null}
                     {view.lipo ? <Table.Cell className="text-muted">{m.customSensors ? t.fbCustom : t.fbGeneral}</Table.Cell> : null}
-                    <Table.Cell className="text-muted">{view.wingman ? mods(m) : ''}</Table.Cell>
-                    <Table.Cell>
+                    <Table.Cell className="text-muted xl:whitespace-nowrap">{view.wingman ? mods(m) : ''}</Table.Cell>
+                    <Table.Cell className="whitespace-nowrap">
                       <Button size="sm" variant="ghost" aria-label={`${t.fbEditModel}: ${m.name}`} onPress={() => setEditing({ file: m.file })}>
-                        {t.fbEditModel}
+                        {t.fbEditShort}
                       </Button>
                     </Table.Cell>
                   </Table.Row>
@@ -169,7 +183,7 @@ function ModelDialog(props: { volume: string; file?: string; free: ModelSummary[
             {!props.file && (
               <Select
                 variant="secondary"
-                className="w-64"
+                className="w-full max-w-md"
                 selectedKey={file ?? null}
                 onSelectionChange={(k) => {
                   if (k === null) return;

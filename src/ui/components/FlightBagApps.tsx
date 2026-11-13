@@ -94,8 +94,9 @@ function AppDialog(props: { volume: string; app: AppDetailView; onClose: () => v
   const [ask, setAsk] = useState<{ reset?: string; label: string; title: string; text: string }>();
   const resets = app.resets.map((r) => ({ reset: r.id, ...resetText(r) }));
   const fix = () => {
-    if (app.problem === 'damaged') setAsk({ label: t.fbReset, title: t.fbResetTitle(app.name), text: t.fbResetText });
-    else onAction(undefined, t.fbCreate);
+    const label = app.fixLabel ?? '';
+    if (app.fixAsk) setAsk(resetText({ label, ask: app.fixAsk }));
+    else onAction(undefined, label);
   };
   return (
     <>
@@ -123,7 +124,7 @@ function AppDialog(props: { volume: string; app: AppDetailView; onClose: () => v
                     <Alert.Title>{app.problem === 'update' ? t.fbUpdateNeeded(app.name) : app.problem === 'noConfig' ? t.fbNoSettings : t.fbDamaged}</Alert.Title>
                     {app.problem !== 'update' && <Alert.Description>{app.problem === 'noConfig' ? t.fbNoSettingsText : t.fbDamagedText}</Alert.Description>}
                   </Alert.Content>
-                  {app.fix && <Button onPress={fix}>{app.problem === 'noConfig' ? t.fbCreate : t.fbReset}</Button>}
+                  {app.fix && app.fixLabel && <Button onPress={fix}>{app.fixLabel}</Button>}
                 </Alert>
               )}
               {app.setupErrors.length > 0 && (
