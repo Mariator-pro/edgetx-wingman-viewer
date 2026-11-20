@@ -602,8 +602,10 @@ function fb_apps(current, names)
     if not app.ok or app.loadError then v.problem = "update"
     elseif app.noConfig then v.problem = "noConfig"
     elseif app.err then v.problem = "damaged" end
+    -- not used by the active model: grey, with Flight Bag's reason (interface 1.1 and later)
+    if app.off and type(A.offText) == "function" then v.off, v.offText = true, A.offText(app) end
     for i, l in ipairs(A.popupLines(app)) do
-      if i > 1 and not l[2] and l[1] ~= v.url then v.about[#v.about + 1] = l[1] end
+      if i > 1 and not l[2] and l[1] ~= v.url and l[1] ~= v.offText then v.about[#v.about + 1] = l[1] end
     end
     if not v.problem then
       for _, e in ipairs(app.setupErrs or {}) do v.setupErrors[#v.setupErrors + 1] = tostring(e) end
@@ -900,6 +902,8 @@ export async function flightBagApps(card: string, lang = 'en'): Promise<AppDetai
       ok: a.ok === true,
       sign: a.sign === true,
       icon: a.icon === true && isSafeName(a.folder),
+      ...opt('off', a.off === true ? true : undefined),
+      ...opt('offText', a.off === true ? t(a.offText) : undefined),
       ...opt('url', url && /^github\.com\/[\w.-]+\/[\w.-]+$/.test(url) ? url : undefined),
       about: arr<string>(a.about).map((s) => t(s) ?? ''),
       ...opt('problem', PROBLEMS.find((p) => p === a.problem)),

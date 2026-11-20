@@ -36,6 +36,11 @@ describe('flights', () => {
     expect(kinds(rows)).toEqual([['takeoff@5', 'link-lost@41', 'link-back@51', 'landing@71']]);
   });
 
+  it('a line cut off by the loss (link values, empty FM) is no landing', () => {
+    const rows = [...span(0, 4, () => link('ACRO*')), ...span(5, 40, () => link('ACRO')), { s: 41, lq: 100, rssi: -60 }, ...span(42, 50, off), ...span(51, 70, () => link('ACRO')), ...span(71, 72, () => link('ACRO*'))];
+    expect(kinds(rows)).toEqual([['takeoff@5', 'link-lost@41', 'link-back@51', 'landing@71']]);
+  });
+
   it('a short gap under 1.5 s is bridged', () => {
     const rows = [...span(0, 4, () => link('ACRO*')), ...span(5, 20, () => link('ACRO')), { s: 21 }, ...span(22, 30, () => link('ACRO')), ...span(31, 32, () => link('ACRO*'))];
     expect(kinds(rows)).toEqual([['takeoff@5', 'landing@31']]);

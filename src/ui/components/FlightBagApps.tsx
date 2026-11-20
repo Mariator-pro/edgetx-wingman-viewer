@@ -33,6 +33,7 @@ export function FlightBagApps(props: {
               <span className="flex flex-col items-start text-left leading-tight">
                 <span className="font-semibold">{a.name}</span>
                 {a.version && <span className="text-xs font-normal text-muted">v{a.version}</span>}
+                {a.off && a.offText && <span className="sr-only">{a.offText}</span>}
                 {a.sign && <span className="sr-only">{t.fbNeedsAttention}</span>}
               </span>
             </Button>
@@ -68,10 +69,12 @@ function AppIcon({ volume, app, size }: { volume: string; app: AppDetailView; si
           alt=""
           width={size}
           height={size}
-          className="block size-full rounded-lg"
+          className={`block size-full rounded-lg${app.off ? ' opacity-40 grayscale' : ''}`}
         />
       ) : (
-        <span className="flex size-full items-center justify-center rounded-lg bg-zinc-800 font-semibold text-white">{app.name.slice(0, 1)}</span>
+        <span className={`flex size-full items-center justify-center rounded-lg bg-zinc-800 font-semibold text-white${app.off ? ' opacity-40' : ''}`}>
+          {app.name.slice(0, 1)}
+        </span>
       )}
       {app.sign && (
         <svg className="absolute -right-1.5 -bottom-1" width={16} height={16} viewBox="0 0 16 16" aria-hidden="true">
@@ -117,6 +120,14 @@ function AppDialog(props: { volume: string; app: AppDetailView; onClose: () => v
               </span>
             </Modal.Header>
             <Modal.Body className="flex flex-col gap-5">
+              {app.off && app.offText && (
+                <Alert status="default">
+                  <Alert.Indicator />
+                  <Alert.Content>
+                    <Alert.Title>{app.offText}</Alert.Title>
+                  </Alert.Content>
+                </Alert>
+              )}
               {app.problem && (
                 <Alert status="warning">
                   <Alert.Indicator />

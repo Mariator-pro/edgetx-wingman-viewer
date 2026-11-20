@@ -59,6 +59,8 @@ export interface AppDetailView {
   ok: boolean;
   sign: boolean; // the warning sign beside the app
   icon: boolean; // the card has an icon.png for it
+  off?: boolean; // the radio's active model doesn't use it (no widget or function script, or off in Wingman): icon greyed
+  offText?: string; // Flight Bag's line saying so, in the interface's language
   url?: string; // "github.com/…", from the manifest
   about: string[]; // e.g. copyright and licence
   problem?: 'update' | 'noConfig' | 'damaged';

@@ -64,4 +64,23 @@ describe.skipIf(!hasWingman)('Flight Bag models on a card', () => {
     expect(sntnl?.fixAsk).toMatch(/\?/);
     expect(apps.find((a) => a.folder === 'GPSHOMER')?.resets.map((r) => r.id)).toEqual(['settings', 'flights']);
   });
+
+  it('greys an app the active model does not use, with the reason from Flight Bag', async () => {
+    const c = await card();
+    const before = await flightBagApps(c, 'en');
+    expect(before.find((a) => a.folder === 'GPSHOMER')?.off).toBeUndefined();
+    expect(before.find((a) => a.folder === 'WINGMAN')?.offText).toBe('Not used on this model');
+    // GPS Homer's widget off the screen, Link Sentinel only as a global function
+    const model = join(c, 'MODELS', 'model1.yml');
+    const yml = await readFile(model, 'utf8');
+    await writeFile(model, yml.replace('widgetName: GPS Homer', 'widgetName: Text').replace('widgetName: Sentinel', 'widgetName: Text'));
+    await writeFile(join(c, 'RADIO', 'radio.yml'), (await readFile(join(c, 'RADIO', 'radio.yml'), 'utf8')) + 'customFn:\n   0:\n      swtch: "ON"\n      func: PLAY_SCRIPT\n      def: "sntnl,1,On"\n');
+    const apps = await flightBagApps(c, 'de');
+    const gps = apps.find((a) => a.folder === 'GPSHOMER');
+    expect(gps?.off).toBe(true);
+    expect(gps?.offText).toBe('Von diesem Modell nicht genutzt');
+    expect(gps?.about).not.toContain(gps?.offText);
+    expect(gps?.setupErrors).toEqual([]);
+    expect(apps.find((a) => a.folder === 'SNTNL')?.off).toBeUndefined();
+  });
 });

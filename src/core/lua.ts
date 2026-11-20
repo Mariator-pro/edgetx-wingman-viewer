@@ -17,8 +17,8 @@ const TIME_LIMIT_MS = 5000;
 const HOOK_EVERY = 10_000; // instructions between looks at the clock
 
 // What a script may read (and list) and where it may write: settings files of the apps only, and GPS Homer's
-// list of last positions, which its resets empty.
-const READABLE = /^\/(SCRIPTS|SOUNDS|WIDGETS|MODELS)(\/|$)/;
+// list of last positions, which its resets empty. The radio's settings file only for its global functions.
+const READABLE = /^\/((SCRIPTS|SOUNDS|WIDGETS|MODELS)(\/|$)|RADIO\/radio\.yml$)/;
 const WRITABLE = /^\/SCRIPTS\/([^/]+\/config|GPSHOMER\/flights)\.lua$/;
 
 // A card path as the scripts write it ("/SCRIPTS/LIPONY/core.lua"): its parts, or undefined when it could

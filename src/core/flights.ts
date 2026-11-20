@@ -117,8 +117,11 @@ function flightsOfBlock(block: Sample[], samples: Sample[], arming: boolean): Fl
     current = undefined;
   };
 
-  for (const s of block) {
-    const up = linkUp(s);
+  for (const [k, s] of block.entries()) {
+    // The radio writes a line sensor by sensor: a link lost meanwhile leaves the link values and an empty FM
+    // (read as disarmed). Such a line before one without link counts as without link.
+    const next = block[k + 1];
+    const up = linkUp(s) && !(arming && s.fm === undefined && next !== undefined && !linkUp(next));
     if (up) {
       lostSince = undefined;
       if (!arming) armed = true;
