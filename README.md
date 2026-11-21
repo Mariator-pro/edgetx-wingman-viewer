@@ -1,4 +1,4 @@
-# EdgeTX Wingman Viewer
+# EdgeTX Wingman Viewer _(edgetx-wingman-viewer)_
 
 ![EdgeTX Wingman Viewer: analyze, visualize and optimize your flights](docs/banner.png)
 
@@ -10,7 +10,17 @@ Desktop app for macOS, Windows and Linux, in English and German (English by defa
 
 **Early version:** copying logs, the list of flights, the map with playback, values, charts and export all work. It has been tested with logs from the EdgeTX simulator; the check on a real radio is still to come.
 
-## What it does
+## 📚 Table of Contents
+
+- [What it does](#-what-it-does)
+- [Requirements](#-requirements)
+- [Install](#-install)
+- [Usage](#-usage)
+- [Your data](#-your-data)
+- [More documentation](#-more-documentation)
+- [License](#-license)
+
+## 🎯 What it does
 
 - **Copies your logs** as soon as the radio is connected, and keeps them on the computer. Flights stay in the app after you delete the logs on the SD card, and you can look at them without the radio.
 - **Lists every flight** in one table with date, time, model, radio, duration and the battery pack. A log with several flights (for example one log per day) shows each flight on its own.
@@ -27,7 +37,7 @@ It is careful with your data:
 - Deleted flights stay under "Recently deleted" for 30 days and can be restored until then.
 - Logs are read as EdgeTX writes them; lines the app can't read are skipped and counted, never guessed.
 
-## What the radio needs
+## 🧰 Requirements
 
 EdgeTX writes logs only with the special function "SD Logs" on the model. [Flight Bag](https://github.com/Mariator-pro/edgetx-flight-bag) sets it up for you; you can also add it by hand under the model's special functions.
 
@@ -35,7 +45,7 @@ The map needs a GPS sensor in the telemetry. Without one, the app still shows th
 
 Where you use [Lipo Nanny](https://github.com/Mariator-pro/edgetx-lipo-nanny), [Link Sentinel](https://github.com/Mariator-pro/elrs-link-sentinel) or [GPS Homer](https://github.com/Mariator-pro/edgetx-gps-homer), their warnings are logged as sensors (`LNst`, `LNpk`, `LSst`, `GHst`), and the app shows the same hints as the radio, colors the path by their warning levels and shows the pack of each flight with its details from Lipo Nanny's settings. EdgeTX adds these sensors only while "Discover new sensors" runs in the model's telemetry; Flight Bag tells you when one is missing. Logs without them get hints for a weak link and a low battery with the same limits as Link Sentinel and Lipo Nanny, and their settings from the SD card where you use them.
 
-## Install
+## 📥 Install
 
 Download the app from the [Releases](https://github.com/Mariator-pro/edgetx-wingman-viewer/releases) page:
 
@@ -60,7 +70,7 @@ On start the app looks for a newer release and shows it at the top left:
 - **Windows (portable)**: "Download" opens the release page; unzip the new version and delete the old folder.
 - **macOS**: "Download" opens the release page. Install the new version like the first one; the app replaces the old one in Applications. macOS accepts an in-place update only for apps signed with an Apple certificate, which this one is not.
 
-## Using it
+## ✨ Usage
 
 To look around before your first flight, click "Open sample flight" on the Flights page: a made-up flight that shows what the app can do. It isn't added to your list.
 
@@ -122,6 +132,8 @@ To export many flights at once, use the [command line](docs/command-line.md).
 
 With the radio connected, "Flight Bag" in the sidebar sets your Lua apps (Lipo Nanny, Link Sentinel, GPS Homer and Wingman) the way Flight Bag does on the radio: the same fields and rules, read from the apps on the SD card.
 
+![Flight Bag on the Warnings page: the four Lua apps on top, below them GPS Homer's, Lipo Nanny's and Link Sentinel's warning limits](docs/screenshots/flightbag.png)
+
 - **Warnings, Alerts, Display**: thresholds, sounds (play them on the computer), vibration and what Wingman shows. Settings shared by the apps sit on top under "All apps".
 - **Batteries**: Lipo Nanny's batteries with their packs and statistics. Add or edit a battery, add or retire packs.
 - **Models**: per model the cells, parallel packs, which batteries it flies with, the telemetry sensors Lipo Nanny reads (chosen from the sensors in the model's file, for any model, not only the selected one) and what Wingman shows for it. "Add model" sets up another model from the SD card. The "SD Logs" setting stays on the radio for now.
@@ -139,7 +151,7 @@ This part is new and not yet checked on a radio.
 
 Appearance (light or dark) and language are chosen at the bottom of the sidebar.
 
-## Your data on the computer
+## 💾 Your data
 
 The copied logs, model files and settings of your Lua projects, notes, tags and the app's settings are kept in:
 
@@ -149,7 +161,7 @@ The copied logs, model files and settings of your Lua projects, notes, tags and 
 
 Logs are kept per radio type under `Logs/`, imported ones under `Logs/imported/`. A log whose flights are all deleted waits in `Trash/` for 30 days. The app sends nothing anywhere: no usage data, no error reports. It only goes online for map tiles and to look for a new version of itself.
 
-## More documentation
+## 📖 More documentation
 
 You do not need any of this to use the app. It is for those who want to go further:
 
@@ -158,6 +170,6 @@ You do not need any of this to use the app. It is for those who want to go furth
 - [Satellite map](docs/satellite-map.md): creating your own ArcGIS key for satellite imagery
 - [Development](docs/development.md): running from source, building the app and making a release
 
-## License
+## 📄 License
 
 Released under the [MIT License](LICENSE). The app bundles open source packages under their own licenses, listed under Settings, About, "Show licenses" and in `THIRD_PARTY_LICENSES.txt` in the app's resources folder. Electron's own license files (`LICENSE.electron.txt`, `LICENSES.chromium.html`) are in the same folder on macOS and in the app folder on Windows and Linux. Map data © OpenStreetMap contributors; the attribution of the map in use is always shown on the map.

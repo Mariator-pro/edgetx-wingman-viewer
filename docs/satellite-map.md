@@ -45,4 +45,4 @@ If Esri refuses the tiles, the legend on the map shows "Esri doesn't send the sa
 
 Your ArcGIS account is your own agreement with Esri, and its terms apply to how you use the imagery.
 
-The key is stored only in the app's [data folder](../README.md#your-data-on-the-computer) on your computer and is sent only to Esri, with each satellite tile. Those requests also tell Esri which areas you are looking at, so where you fly can be linked to your account.
+The key is stored only in the app's [data folder](../README.md#-your-data) on your computer and is sent only to Esri, with each satellite tile. Those requests also tell Esri which areas you are looking at, so where you fly can be linked to your account.

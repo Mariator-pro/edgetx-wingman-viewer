@@ -89,9 +89,9 @@ function MapCard({ run }: { run: Run }) {
       </Card.Header>
       <Card.Content className="flex flex-col gap-4">
         <div className="flex flex-wrap items-end gap-2">
-          <TextField variant="secondary" className="min-w-80 flex-1" value={tiles} onChange={setTiles} isInvalid={!validTiles(tiles.trim())}>
+          <TextField className="min-w-80 flex-1" value={tiles} onChange={setTiles} isInvalid={!validTiles(tiles.trim())}>
             <Label>{t.tileAddress}</Label>
-            <Input className="font-mono text-sm" spellCheck={false} />
+            <Input variant="secondary" className="font-mono text-sm" spellCheck={false} />
             <Description>{t.tileAddressHint}</Description>
             <FieldError>{t.tileAddressInvalid}</FieldError>
           </TextField>
@@ -101,9 +101,9 @@ function MapCard({ run }: { run: Run }) {
             </Button>
           )}
         </div>
-        <TextField variant="secondary" value={key} onChange={setKey} isInvalid={!validKey(key.trim())}>
+        <TextField value={key} onChange={setKey} isInvalid={!validKey(key.trim())}>
           <Label>{t.arcgisKey}</Label>
-          <Input type="password" autoComplete="off" spellCheck={false} />
+          <Input variant="secondary" type="password" autoComplete="off" spellCheck={false} />
           <Description>{t.arcgisKeyText}</Description>
           <FieldError>{t.arcgisKeyInvalid}</FieldError>
         </TextField>

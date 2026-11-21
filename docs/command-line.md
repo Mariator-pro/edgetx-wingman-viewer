@@ -43,4 +43,4 @@ Files are named `<model>-<YYYY-MM-DD-HHMMSS>.<gpx|kml|csv>`. GPX and KML hold th
 
 `WINGMAN_VIEWER_VOLUMES=<folder>` replaces the search for drives: the commands, the browser interface and `npm run dev` treat the folder as a connected drive, for example a copy of an SD card (several folders separated like in `PATH`). Use a copy: "Clean up SD card" deletes logs there as on a real card.
 
-The command line uses the same [data folder](../README.md#your-data-on-the-computer) as the app: copied logs are shared.
+The command line uses the same [data folder](../README.md#-your-data) as the app: copied logs are shared.

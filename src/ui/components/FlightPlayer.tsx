@@ -1,6 +1,6 @@
 import { Alert, Button, ButtonGroup, Card, Chip, Disclosure, Dropdown, ListBox, ScrollShadow, Select, Slider, Tabs, ToggleButton, ToggleButtonGroup, Tooltip } from '@heroui/react';
 import type { Map as MapLibre } from 'maplibre-gl';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import type { Airframe, TrackValue } from '../../core/kinds.ts';
 import { ROLES } from '../../core/roles.ts';
 import type { MapSettingsView, TrackView } from '../../server/api.ts';
@@ -197,6 +197,10 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
     return u === '°' || u === '%' ? `${n}${u === '%' ? ' %' : u}` : `${n} ${u}`.trim();
   };
   const colors = useMemo(() => (track ? coloring(track, colorBy) : undefined), [track, colorBy]);
+  // once per flight, so the charts keep their curves while the time moves
+  const allSeries = useMemo(() => (track ? seriesOf(track, t) : []), [track, t]);
+  const summary = useMemo(() => (track ? summaryOf(track) : []), [track]);
+  const levels = useMemo(() => (track && byLevel(colorBy) ? levelsOf(track, colorBy) : undefined), [track, colorBy]);
 
   if (!track || !colors) return <div className="h-[clamp(520px,calc(100vh_-_280px),820px)] animate-pulse rounded-3xl bg-surface-secondary" />;
 
@@ -204,7 +208,7 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
   // over a chart, map and values follow the mouse
   const shownTime = hover ?? time;
   const row = rowAt(track, shownTime);
-  const series = seriesOf(track, t);
+  const series = allSeries;
   const extra = series.filter((s) => s.id.startsWith('log:') && !CORE_SENSORS.has(s.name));
   const up = track.rows.fm?.[row] != null || Object.values(track.rows.values).some((col) => col?.[row] != null);
   type Line = { k: string; name: string; label: string; value: string };
@@ -234,10 +238,8 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
     return { k: e.id, name: e.name, label: e.label, value: v != null ? formatValue(e, v, t.locale) : '–' };
   });
   const choices = colorChoices(track);
-  const summary = summaryOf(track);
   const chartable = new Set(series.map((s) => s.id));
   // the value the path is colored by, in a log line: flight mode, warning level or the number with its unit
-  const levels = byLevel(colorBy) ? levelsOf(track, colorBy) : undefined;
   const colorValue = (r: number): string | undefined => {
     if (colorBy === 'fm') {
       const m = track.rows.fm?.[r];
@@ -260,30 +262,8 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {track.hints.length > 0 && (
-        // the hints first, without scrolling; over one, map and values show its moment
-        <Alert status="warning" className="items-center">
-          <Alert.Indicator />
-          <Alert.Content className="flex-row flex-wrap items-center gap-1.5">
-            <Alert.Title className="sr-only">{t.hintCount(track.hints.length)}</Alert.Title>
-            {track.hints.map((h) => (
-              <Button
-                key={`${h.t}${h.kind}`}
-                size="sm"
-                variant="tertiary"
-                className={`${BADGE} gap-1.5`}
-                aria-label={t.jumpTo(t.hintNames[h.kind], fromTakeoff(h.t, track.takeoff))}
-                onPress={() => pickHint(h.t)}
-                onHoverStart={() => setHover(h.t)}
-                onHoverEnd={() => setHover(undefined)}
-              >
-                <span className="font-mono tabular-nums text-muted">{fromTakeoff(h.t, track.takeoff)}</span>
-                {t.hintNames[h.kind]}
-              </Button>
-            ))}
-          </Alert.Content>
-        </Alert>
-      )}
+      {/* the hints first, without scrolling; over one, map and values show its moment */}
+      <HintBar hints={track.hints} takeoff={track.takeoff} onPick={pickHint} onHover={setHover} />
       <div className="flex flex-wrap gap-4">
         {/* map and values grow with the window, so the top of the charts stays in view */}
         <Card ref={mapBox} className="relative h-[clamp(520px,calc(100vh_-_280px),820px)] min-w-0 flex-[999_1_520px] overflow-hidden p-0">
@@ -336,7 +316,7 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
                       <ToggleButton id="3d">{t.view3d}</ToggleButton>
                     </ToggleButtonGroup>
                     {choices.length > 0 && (
-                      <Select aria-label={t.colorBy} selectedKey={colorBy} onSelectionChange={(k) => k !== null && setColorBy(k as ColorBy)}>
+                      <Select data-on-map aria-label={t.colorBy} selectedKey={colorBy} onSelectionChange={(k) => k !== null && setColorBy(k as ColorBy)}>
                         <Select.Trigger className="shadow-sm">
                           <span className="mr-1 text-muted">{t.colorBy}</span>
                           <Select.Value className="font-semibold" />
@@ -647,6 +627,40 @@ export function FlightPlayer({ flightKey }: { flightKey: string }) {
     </div>
   );
 }
+
+
+// The hints as buttons above the map. Drawn again only for another flight, not on every frame of the playback:
+// a long flight can have hundreds. The callbacks don't count, they only change with the flight.
+const HintBar = memo(
+  function HintBar(props: { hints: TrackView['hints']; takeoff: number; onPick: (t: number) => void; onHover: (t: number | undefined) => void }) {
+    const { t } = usePrefs();
+    if (props.hints.length === 0) return null;
+    return (
+      <Alert status="warning" className="items-center">
+        <Alert.Indicator />
+        <Alert.Content className="flex-row flex-wrap items-center gap-1.5">
+          <Alert.Title className="sr-only">{t.hintCount(props.hints.length)}</Alert.Title>
+          {props.hints.map((h) => (
+            <Button
+              key={`${h.t}${h.kind}`}
+              size="sm"
+              variant="tertiary"
+              className={`${BADGE} gap-1.5`}
+              aria-label={t.jumpTo(t.hintNames[h.kind], fromTakeoff(h.t, props.takeoff))}
+              onPress={() => props.onPick(h.t)}
+              onHoverStart={() => props.onHover(h.t)}
+              onHoverEnd={() => props.onHover(undefined)}
+            >
+              <span className="font-mono tabular-nums text-muted">{fromTakeoff(h.t, props.takeoff)}</span>
+              {t.hintNames[h.kind]}
+            </Button>
+          ))}
+        </Alert.Content>
+      </Alert>
+    );
+  },
+  (a, b) => a.hints === b.hints && a.takeoff === b.takeoff,
+);
 
 function EventList(props: { title: string; empty: string; items: { t: number; text: string; value?: string }[]; takeoff: number; onPick: (t: number) => void }) {
   const { t } = usePrefs();

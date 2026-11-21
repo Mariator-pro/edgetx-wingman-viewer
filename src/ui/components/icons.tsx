@@ -20,14 +20,6 @@ function Svg({ size = 18, className, children }: IconProps & { children: React.R
   );
 }
 
-export const PathIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <circle cx="5" cy="18" r="2" />
-    <circle cx="19" cy="6" r="2" />
-    <path d="M7 18c4 0 3-6 7-6s3-4 3-4" />
-  </Svg>
-);
-
 export const BagIcon = (p: IconProps) => (
   <Svg {...p}>
     <rect x="3" y="7" width="18" height="13" rx="2" />

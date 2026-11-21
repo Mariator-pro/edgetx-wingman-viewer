@@ -392,7 +392,7 @@ const en = {
   fbParallel: 'Parallel packs',
   fbParallelHint: 'Two packs of the same battery fly together. Only batteries with at least 2 packs can be chosen.',
   fbModelBatteries: 'Batteries',
-  fbModelBatteriesText: (cells: number) => `Only batteries with ${cells} cells are listed.`,
+  fbModelBatteriesText: (cells: number) => (cells === 1 ? 'Only batteries with 1 cell are listed.' : `Only batteries with ${cells} cells are listed.`),
   fbNoMatching: (cells: number) => `No battery with ${cells} cells yet. Add one on the “Batteries” page.`,
   fbPackCount: (n: number) => (n === 1 ? '1 pack' : `${n} packs`),
   fbDropped: (n: number) => (n === 1 ? '1 battery' : `${n} batteries`),

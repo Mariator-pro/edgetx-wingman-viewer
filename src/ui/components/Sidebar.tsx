@@ -4,7 +4,7 @@ import type { ProgressEvent, RadioView, StateView } from '../../server/api.ts';
 import { dateTime } from '../format.ts';
 import { LANGUAGES, type Lang } from '../texts.ts';
 import { usePrefs, type Theme } from '../usePrefs.ts';
-import { BagIcon, ListIcon, MapIcon, MoonIcon, PathIcon, SettingsIcon, SunIcon, UploadIcon } from './icons.tsx';
+import { BagIcon, ListIcon, MapIcon, MoonIcon, SettingsIcon, SunIcon, UploadIcon } from './icons.tsx';
 import { ConnectedRadios } from './ConnectedRadios.tsx';
 
 export type Page = 'flights' | 'viewer' | 'flightbag' | 'settings';
@@ -42,9 +42,7 @@ export function Sidebar(props: {
       className="dark flex flex-[1_1_240px] flex-col gap-6 bg-zinc-900 px-3.5 py-5 text-zinc-200 md:fixed md:inset-y-0 md:left-0 md:z-20 md:w-60 md:overflow-y-auto"
     >
       <div className="flex items-center gap-2.5 px-2">
-        <span className="flex size-[30px] shrink-0 items-center justify-center rounded-lg bg-accent text-white">
-          <PathIcon size={16} />
-        </span>
+        <img src="/favicon.svg" alt="" className="size-[30px] shrink-0" />
         <span className="flex min-w-0 flex-col">
           <span className="font-semibold whitespace-nowrap text-white">{t.appName}</span>
           <span className="text-xs text-zinc-400">v{__APP_VERSION__}</span>

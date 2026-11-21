@@ -1,8 +1,8 @@
-import { cp, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { changeModel, flightBagApps, modelEdit } from '../src/core/flightbag.ts';
+import { batteryEdit, changeBattery, changeModel, flightBagApps, flightBagView, modelEdit, saveFlightBag } from '../src/core/flightbag.ts';
 
 const FIXTURES = join(import.meta.dirname, 'fixtures');
 // Flight Bag's Lua files come from the Wingman repo next to this one; without it the card tests are skipped.
@@ -82,5 +82,48 @@ describe.skipIf(!hasWingman)('Flight Bag models on a card', () => {
     expect(gps?.about).not.toContain(gps?.offText);
     expect(gps?.setupErrors).toEqual([]);
     expect(apps.find((a) => a.folder === 'SNTNL')?.off).toBeUndefined();
+  });
+
+  it('saves a page through its rules and replaces the files, leaving no temporary or macOS files', async () => {
+    const c = await card();
+    const lipo = join(c, 'SCRIPTS', 'LIPONY');
+    const cfg = join(lipo, 'config.lua');
+    await writeFile(join(lipo, '._config.lua'), 'mac');
+    await writeFile(join(c, 'SCRIPTS', '._LIPONY'), 'mac');
+    const before = await readFile(cfg, 'utf8');
+
+    // low below critical breaks Lipo Nanny's rule: nothing is written
+    const bad = await saveFlightBag(c, 'warnings', { 'field:LIPONY:warnPct': 10 });
+    expect(bad.written).toEqual([]);
+    expect(bad.problems).toEqual(['Lipo Nanny: Battery low must be above Battery critical']);
+    expect(await readFile(cfg, 'utf8')).toBe(before);
+    // a value outside the field's range is refused before the page logic sees it
+    await expect(saveFlightBag(c, 'warnings', { 'field:LIPONY:warnPct': 500 })).rejects.toThrow(/warnPct/);
+    expect(await readFile(cfg, 'utf8')).toBe(before);
+
+    const ok = await saveFlightBag(c, 'warnings', { 'field:LIPONY:warnPct': 40 });
+    expect(ok.problems).toEqual([]);
+    expect(ok.written).toContain('/SCRIPTS/LIPONY/config.lua');
+    expect(await readFile(cfg, 'utf8')).toMatch(/\["warnPct"\] = 40,/);
+    expect((await flightBagView(c, 'warnings')).rows.find((r) => r.id === 'field:LIPONY:warnPct')?.value).toBe(40);
+    expect((await readdir(lipo)).filter((f) => f.startsWith('._') || f.endsWith('.new'))).toEqual([]);
+    expect(await readdir(join(c, 'SCRIPTS'))).not.toContain('._LIPONY');
+  });
+
+  it("adds and deletes a battery through Lipo Nanny's rules", async () => {
+    const c = await card();
+    const list = async () => (await flightBagView(c, 'batteries')).batteries?.list.map((b) => b.name);
+    expect(await list()).toEqual(['Sample 6s 1300mAh']);
+    const fresh = await batteryEdit(c, undefined, null);
+    expect(fresh.isNew).toBe(true);
+    const cfg = join(c, 'SCRIPTS', 'LIPONY', 'config.lua');
+    const before = await readFile(cfg, 'utf8');
+    expect(await changeBattery(c, undefined, fresh.draft, 'save')).toEqual({ problem: 'Enter a manufacturer.' });
+    expect(await readFile(cfg, 'utf8')).toBe(before);
+
+    expect(await changeBattery(c, undefined, { ...fresh.draft, manufacturer: 'Test', cells: 4 }, 'save')).toEqual({});
+    expect(await list()).toEqual(['Sample 6s 1300mAh', 'Test 4s LiPo 1300mAh']);
+    expect(await changeBattery(c, 'bat_001', null, 'delete')).toEqual({});
+    expect(await list()).toEqual(['Test 4s LiPo 1300mAh']);
   });
 });

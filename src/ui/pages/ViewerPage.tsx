@@ -126,8 +126,8 @@ export function ViewerPage(props: {
                         saveNote();
                       }}
                     >
-                      <TextField variant="secondary" aria-label={t.note} value={note ?? ''} onChange={setNote} autoFocus>
-                        <TextArea placeholder={t.notePlaceholder} maxLength={MAX_NOTE} rows={4} />
+                      <TextField aria-label={t.note} value={note ?? ''} onChange={setNote} autoFocus>
+                        <TextArea variant="secondary" placeholder={t.notePlaceholder} maxLength={MAX_NOTE} rows={4} />
                       </TextField>
                       <div className="flex justify-end gap-2">
                         <Button size="sm" variant="tertiary" onPress={() => setNote(undefined)}>
@@ -243,8 +243,8 @@ export function ViewerPage(props: {
                       addTag();
                     }}
                   >
-                    <TextField variant="secondary" aria-label={t.addTag} value={tag} onChange={setTag} autoFocus>
-                      <Input placeholder={t.tagPlaceholder} maxLength={MAX_TAG} className="w-40" />
+                    <TextField aria-label={t.addTag} value={tag} onChange={setTag} autoFocus>
+                      <Input variant="secondary" placeholder={t.tagPlaceholder} maxLength={MAX_TAG} className="w-40" />
                     </TextField>
                     <Button type="submit" size="sm" isDisabled={!tag.trim()}>
                       {t.addTag}

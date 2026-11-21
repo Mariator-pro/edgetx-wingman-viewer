@@ -24,9 +24,23 @@ const OVERVIEW_H = 44;
 const PAD = 8;
 const FOLD_MS = 200; // a strip opens and closes this fast, so the page grows and shrinks smoothly
 
+// The last paths of each value, so playback and the pointer, which only move the time line, don't work out the
+// curves again; a new zoom, width or flight does.
+const paths = new WeakMap<(number | null)[], Map<string, string>>();
+function linePath(times: number[], values: (number | null)[], r: Range, w: number, h: number, lo: number, hi: number): string {
+  const key = `${r[0]} ${r[1]} ${w} ${h} ${lo} ${hi}`;
+  let known = paths.get(values);
+  const hit = known?.get(key);
+  if (hit !== undefined) return hit;
+  if (!known || known.size >= 8) paths.set(values, (known = new Map()));
+  const d = drawLine(times, values, r, w, h, lo, hi);
+  known.set(key, d);
+  return d;
+}
+
 // The line of one value between r0 and r1 as an SVG path. Per pixel column only the first, smallest, largest
 // and last value, so long logs draw as fast as short ones; missing values break the line.
-function linePath(times: number[], values: (number | null)[], r: Range, w: number, h: number, lo: number, hi: number): string {
+function drawLine(times: number[], values: (number | null)[], r: Range, w: number, h: number, lo: number, hi: number): string {
   const x = (t: number) => ((t - r[0]) / (r[1] - r[0] || 1)) * w;
   const y = (v: number) => (hi === lo ? h / 2 : h - PAD - ((v - lo) / (hi - lo)) * (h - 2 * PAD));
   const from = Math.max(0, rowIndex(times, r[0]) - 1);
