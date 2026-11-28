@@ -18,10 +18,6 @@ export function Models(props: { volume: string; view: ModelsView; run: Run; noti
 
   const configured = view.list.filter((m) => m.configured);
   const free = view.list.filter((m) => !m.configured);
-  const mods = (m: ModelSummary) => {
-    const on = view.modules.filter((x) => m.mods?.[x.key] !== false).map((x) => x.label);
-    return on.length ? on.join(', ') : t.fbNone;
-  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -83,7 +79,7 @@ export function Models(props: { volume: string; view: ModelsView; run: Run; noti
                       </Table.Cell>
                     ) : null}
                     {view.lipo ? <Table.Cell className="text-muted">{m.customSensors ? t.fbCustom : t.fbGeneral}</Table.Cell> : null}
-                    <Table.Cell className="text-muted xl:whitespace-nowrap">{view.wingman ? mods(m) : ''}</Table.Cell>
+                    <Table.Cell className="text-muted xl:whitespace-nowrap">{view.wingman ? (m.modsText ?? '') : ''}</Table.Cell>
                     <Table.Cell className="whitespace-nowrap">
                       <Button size="sm" variant="ghost" aria-label={`${t.fbEditModel}: ${m.name}`} onPress={() => setEditing({ file: m.file })}>
                         {t.fbEditShort}
@@ -370,6 +366,39 @@ function ModelDialog(props: { volume: string; file?: string; free: ModelSummary[
                             </Switch.Control>
                           </Switch.Content>
                         </Switch>
+                      </div>
+                    );
+                  })}
+                  {(edit.own ?? []).map((o) => {
+                    const value = draft.own?.[o.key] ?? '';
+                    const setValue = (v: string) => {
+                      const next = { ...draft.own };
+                      if (v === '') delete next[o.key];
+                      else next[o.key] = v;
+                      set({ own: next });
+                    };
+                    return (
+                      <div key={o.key} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3">
+                        <div className="flex min-w-60 flex-1 flex-col gap-0.5">
+                          <span className="font-medium">{o.label}</span>
+                          {o.desc && <span className="text-sm text-muted">{o.desc}</span>}
+                        </div>
+                        <Select aria-label={o.label} variant="secondary" className="w-48" selectedKey={`o:${value}`} onSelectionChange={(k) => k !== null && setValue(String(k).replace(/^o:/, ''))}>
+                          <Select.Trigger>
+                            <Select.Value />
+                            <Select.Indicator />
+                          </Select.Trigger>
+                          <Select.Popover className="field-list">
+                            <ListBox>
+                              {o.choices.map((c) => (
+                                <ListBox.Item key={c.id} id={`o:${c.id}`} textValue={c.label}>
+                                  {c.label}
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                              ))}
+                            </ListBox>
+                          </Select.Popover>
+                        </Select>
                       </div>
                     );
                   })}

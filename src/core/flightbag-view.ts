@@ -159,6 +159,7 @@ export interface ModelSummary {
   batteries?: string[]; // names of the assigned batteries
   customSensors?: boolean;
   mods?: Record<string, boolean>; // Wingman's columns, by module
+  modsText?: string; // the modules shown and own styles, as Flight Bag writes them: "Battery, Link, GPS (Horizon)"
 }
 
 export interface ModelsView {
@@ -177,6 +178,15 @@ export interface ModelDraft {
   batteryIds?: string[];
   sensors?: Record<string, string>; // by field; missing means the default
   mods?: Record<string, boolean>;
+  own?: Record<string, string>; // Wingman's own display settings by key; missing means the one for all models
+}
+
+// A display setting of Wingman a model may have of its own; choice id "" is the one for all models.
+export interface OwnSettingView {
+  key: string; // gpsView, barStyle
+  label: string;
+  desc?: string;
+  choices: { id: string; label: string }[];
 }
 
 export interface SensorFieldView {
@@ -212,6 +222,7 @@ export interface ModelEditView {
   sensors?: SensorFieldView[];
   customSensors?: boolean;
   modules?: ModuleView[];
+  own?: OwnSettingView[];
 }
 
 // A position GPS Homer stored when the telemetry ended after a flight.

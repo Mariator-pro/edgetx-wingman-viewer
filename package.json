@@ -3,14 +3,14 @@
   "productName": "EdgeTX Wingman Viewer",
   "desktopName": "edgetx-wingman-viewer.desktop",
   "private": true,
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Flight map and log viewer for EdgeTX radios",
   "author": "Mariator-pro",
   "license": "MIT",
   "type": "module",
   "main": "dist/desktop/main.cjs",
   "bin": {
-    "wingman-viewer": "src/cli/main.ts"
+    "edgetx-wingman-viewer": "src/cli/main.ts"
   },
   "engines": {
     "node": ">=22.18"
@@ -36,8 +36,8 @@
     "@deck.gl/layers": "9.4.0",
     "@deck.gl/mapbox": "9.4.0",
     "@deck.gl/mesh-layers": "9.4.0",
-    "@heroui/react": "3.2.7",
-    "@heroui/styles": "3.2.7",
+    "@heroui/react": "3.2.8",
+    "@heroui/styles": "3.2.8",
     "@loaders.gl/core": "4.5.4",
     "@loaders.gl/gltf": "4.5.4",
     "@loaders.gl/schema": "4.5.4",

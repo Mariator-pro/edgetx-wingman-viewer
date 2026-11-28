@@ -4,6 +4,7 @@ import type { MapSettingsView } from '../../server/api.ts';
 import { isStickMode } from '../../core/kinds.ts';
 import { get, post } from '../api.ts';
 import { AboutCard } from '../components/About.tsx';
+import { LanguageCard } from '../components/LanguageCard.tsx';
 import { usePrefs } from '../usePrefs.ts';
 
 type Run = (fn: () => Promise<unknown>) => void;
@@ -49,6 +50,7 @@ export function SettingsPage({ run }: { run: Run }) {
           </Button>
         </Card.Footer>
       </Card>
+      <LanguageCard />
       <AboutCard />
     </div>
   );

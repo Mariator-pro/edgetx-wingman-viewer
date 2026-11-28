@@ -4,6 +4,7 @@ import { request } from 'node:http';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { paths } from '../src/core/paths.ts';
+import { loadSettings } from '../src/core/settings.ts';
 import type { FlightDetailView, FlightView, LicensesView, MapSettingsView, StateView, TrackView } from '../src/server/api.ts';
 import { noteServer, runningServer } from '../src/server/running.ts';
 import { startServer, type RunningServer } from '../src/server/server.ts';
@@ -197,7 +198,7 @@ describe('server', () => {
     expect((await post('/api/cleanup', { volume: '/elsewhere' })).status).toBe(404);
   });
 
-  it('keeps language, theme and stick mode for the next start, refuses others; limits and bad JSON', async () => {
+  it('keeps language, theme, stick mode and the collapsed sidebar for the next start, refuses others; limits and bad JSON', async () => {
     expect((await post('/api/prefs', { lang: 'de', theme: 'dark' })).status).toBe(200);
     expect((await post('/api/prefs', { sticks: 1 })).status).toBe(200);
     expect(JSON.parse(await readFile(join(dir, 'data', 'settings.json'), 'utf8')).ui).toEqual({ lang: 'de', theme: 'dark', sticks: 1 });
@@ -207,6 +208,13 @@ describe('server', () => {
     expect((await post('/api/prefs', { more: 'shown' })).status).toBe(200);
     expect(JSON.parse(await readFile(join(dir, 'data', 'settings.json'), 'utf8')).ui.more).toBe('shown');
     expect((await post('/api/prefs', { more: 'all' })).status).toBe(400);
+    expect((await post('/api/prefs', { sidebarCollapsed: true })).status).toBe(200);
+    expect(JSON.parse(await readFile(join(dir, 'data', 'settings.json'), 'utf8')).ui.sidebarCollapsed).toBe(true);
+    expect((await loadSettings(join(dir, 'data', 'settings.json'))).ui?.sidebarCollapsed).toBe(true);
+    expect((await post('/api/prefs', { sidebarCollapsed: false })).status).toBe(200);
+    expect(JSON.parse(await readFile(join(dir, 'data', 'settings.json'), 'utf8')).ui.sidebarCollapsed).toBe(false);
+    expect((await post('/api/prefs', { sidebarCollapsed: 'yes' })).status).toBe(400);
+    expect((await post('/api/prefs', { theme: 'system' })).status).toBe(200);
     expect((await post('/api/prefs', { theme: 'pink' })).status).toBe(400);
     expect((await post('/api/prefs', { sticks: 5 })).status).toBe(400);
     expect((await api('/api/prefs', { method: 'POST', body: '{x' })).status).toBe(400);
@@ -226,7 +234,7 @@ describe('server', () => {
   it('notes the running server for a second start, only for this user; a note of a killed server does not count', async () => {
     const file = join(dir, 'data', 'server.json');
     const forget = await noteServer(file, server.open);
-    expect((await stat(file)).mode & 0o777).toBe(0o600);
+    if (process.platform !== 'win32') expect((await stat(file)).mode & 0o777).toBe(0o600);
     expect(JSON.parse(await readFile(file, 'utf8'))).toEqual({ url: server.open, pid: process.pid });
     await forget();
     await expect(stat(file)).rejects.toThrow();

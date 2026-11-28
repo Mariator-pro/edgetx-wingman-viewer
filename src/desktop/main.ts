@@ -3,6 +3,7 @@ import { app, BrowserWindow, screen, session, shell } from 'electron';
 import { paths } from '../core/paths.ts';
 import { startServer } from '../server/server.ts';
 import { isOwnPage, isWebLink } from './links.ts';
+import { setAppMenu } from './menu.ts';
 import { appUpdates } from './update.ts';
 
 // Space kept free around the window when it opens, in points.
@@ -57,8 +58,9 @@ async function start(): Promise<void> {
     title: 'EdgeTX Wingman Viewer',
   });
   // Electron's default menu has nothing the app needs on Windows, and Windows draws a stray white line under it in dark mode;
-  // macOS keeps it for Cmd+Q and copy and paste
+  // macOS gets its own menu bar with Settings
   if (process.platform !== 'darwin') win.removeMenu();
+  setAppMenu(() => win, true);
   // links to GitHub and other sites open in the browser, not in the app; other schemes not at all
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (isWebLink(url)) void shell.openExternal(url);

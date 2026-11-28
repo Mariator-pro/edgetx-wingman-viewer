@@ -6,7 +6,7 @@ See every flight from your EdgeTX radio on a map, in 2D and 3D, and play it back
 
 ![The Viewer with a flight on the street map, its hints above the map, the values and sticks beside it and the timeline at the bottom](docs/screenshots/viewer.png)
 
-Desktop app for macOS, Windows and Linux, in English and German (English by default, German in a menu at the bottom of the sidebar). For advanced use, a [browser interface](docs/browser-interface.md) and a [command line tool](docs/command-line.md) are available when running from source.
+Desktop app for macOS, Windows and Linux, in English and German (English by default, German under Settings). For advanced use, a [browser interface](docs/browser-interface.md) and a [command line tool](docs/command-line.md) are available when running from source.
 
 **Early version:** copying logs, the list of flights, the map with playback, values, charts and export all work. It has been tested with logs from the EdgeTX simulator; the check on a real radio is still to come.
 
@@ -136,20 +136,23 @@ With the radio connected, "Flight Bag" in the sidebar sets your Lua apps (Lipo N
 
 - **Warnings, Alerts, Display**: thresholds, sounds (play them on the computer), vibration and what Wingman shows. Settings shared by the apps sit on top under "All apps".
 - **Batteries**: Lipo Nanny's batteries with their packs and statistics. Add or edit a battery, add or retire packs.
-- **Models**: per model the cells, parallel packs, which batteries it flies with, the telemetry sensors Lipo Nanny reads (chosen from the sensors in the model's file, for any model, not only the selected one) and what Wingman shows for it. "Add model" sets up another model from the SD card. The "SD Logs" setting stays on the radio for now.
+- **Models**: per model the cells, parallel packs, which batteries it flies with, the telemetry sensors Lipo Nanny reads (chosen from the sensors in the model's file, for any model, not only the selected one) and what Wingman shows for it, including its page and bar style (the global one or its own). "Add model" sets up another model from the SD card. The "SD Logs" setting stays on the radio for now.
 - **Last flights**: the last positions GPS Homer stored when the telemetry ended, with "Open map", "Copy position" and, when the app has the flight, "Open flight".
 - **Save** writes the settings to the SD card, and writes nothing while a value breaks one of the apps' rules. Each file is written next to the old one first and then replaces it, so unplugging the radio while saving never leaves half a file.
 
-This part is new and not yet checked on a radio.
+This part is new. Saving has been checked on a radio (the widget and Flight Bag on the radio take the new values without a restart); the other checks on a radio are still to come.
 
 ### 6. Settings
 
 - **Map**: the street map comes from OpenStreetMap. Change the tile address only if you use another tile server with the same layout. Satellite imagery comes from Esri and needs your own ArcGIS key (a free account on ArcGIS Location Platform with basemap access); the app has no key of its own. See [Satellite map](docs/satellite-map.md) for how to create one.
 - **Stick mode for imported logs**: logs copied from a radio use the stick mode set on it. For imported logs the app doesn't know it, so choose it here (mode 2 by default).
+- **Language**: English or German.
 - **Data folder**: "Open folder" shows where the app keeps your logs (see below).
 - **About**: the version, a link to the app's MIT license and its source code, and "Show licenses" with the licenses of all open source packages inside the app.
 
-Appearance (light or dark) and language are chosen at the bottom of the sidebar.
+Appearance (light, dark or system) is chosen at the bottom of the sidebar. The button next to the app name, or Cmd+B (Ctrl+B on Windows and Linux), collapses the sidebar to its icons with short labels below them. The app keeps the choice for the next start.
+
+On a Mac, "Settings…" in the app menu (Cmd+,) opens this page too.
 
 ## 💾 Your data
 

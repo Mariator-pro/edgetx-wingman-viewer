@@ -6,6 +6,7 @@ import type { Lang } from '../texts.ts';
 import { usePrefs } from '../usePrefs.ts';
 import { Confirm } from './Confirm.tsx';
 import { PlusIcon, TrashIcon } from './icons.tsx';
+import { radioDay, radioMonth } from '../format.ts';
 
 type Run = (fn: () => Promise<unknown>) => void;
 
@@ -66,8 +67,8 @@ export function Batteries(props: { volume: string; view: BatteriesView; run: Run
                         <Table.Cell className="tabular-nums">{p.wear} %</Table.Cell>
                         <Table.Cell className="tabular-nums">{p.totalMah !== undefined ? `${p.totalMah} mAh` : '–'}</Table.Cell>
                         <Table.Cell className="tabular-nums">{p.minVCell !== undefined ? `${p.minVCell.toLocaleString(t.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V` : '–'}</Table.Cell>
-                        <Table.Cell>{p.lastUsed ?? '–'}</Table.Cell>
-                        <Table.Cell>{p.buyDate ?? '–'}</Table.Cell>
+                        <Table.Cell className="tabular-nums">{p.lastUsed ? radioDay(p.lastUsed, t.locale) : '–'}</Table.Cell>
+                        <Table.Cell className="tabular-nums">{p.buyDate ? radioMonth(p.buyDate, t.locale) : '–'}</Table.Cell>
                       </Table.Row>
                     ))}
                   </Table.Body>

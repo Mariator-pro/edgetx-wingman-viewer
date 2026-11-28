@@ -50,16 +50,21 @@ export const SettingsIcon = (p: IconProps) => (
   </Svg>
 );
 
-export const SunIcon = (p: IconProps) => (
+// A radio with its antenna.
+export const RadiosIcon = (p: IconProps) => (
   <Svg {...p}>
-    <circle cx="12" cy="12" r="4" />
-    <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    <path d="M12 7V3" />
+    <rect x="3" y="7" width="18" height="12" rx="3" />
+    <circle cx="8" cy="13" r="2" />
+    <circle cx="16" cy="13" r="2" />
   </Svg>
 );
 
-export const MoonIcon = (p: IconProps) => (
+// Arrow up in a circle: a new version of the app.
+export const AppUpdateIcon = (p: IconProps) => (
   <Svg {...p}>
-    <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 16V8M8.5 11.5 12 8l3.5 3.5" />
   </Svg>
 );
 

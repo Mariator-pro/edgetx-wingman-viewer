@@ -10,6 +10,7 @@ import { notify } from './notify.ts';
 import { SettingsPage } from './pages/SettingsPage.tsx';
 import { ViewerPage } from './pages/ViewerPage.tsx';
 import { usePrefs } from './usePrefs.ts';
+import { OPEN_SETTINGS } from './menu.ts';
 
 export function App() {
   const { state, progress, connected } = useServer();
@@ -26,6 +27,13 @@ export function App() {
     if (page === 'flightbag' && target !== page && unsaved) setLeaving(target);
     else setPage(target);
   };
+
+  // "Settings…" in the menu bar of the desktop app (Cmd+,)
+  useEffect(() => {
+    const open = () => navigate('settings');
+    addEventListener(OPEN_SETTINGS, open);
+    return () => removeEventListener(OPEN_SETTINGS, open);
+  });
 
   // Flight Bag needs a radio: when it goes away, back to the flights, and say if changes were lost.
   const [lost, setLost] = useState(0); // times changes were lost that way
@@ -79,7 +87,7 @@ export function App() {
         }
         onAppUpdate={() => run(() => post('/api/app-update'))}
       />
-      <main className="box-border flex min-w-0 flex-[999_1_640px] flex-col gap-6 p-7 md:ml-60">
+      <main className="box-border flex min-w-0 flex-[999_1_640px] flex-col gap-6 p-7">
         {!connected && state && (
           <Alert status="warning">
             <Alert.Indicator />

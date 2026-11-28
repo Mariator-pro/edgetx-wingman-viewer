@@ -6,7 +6,8 @@ import { post } from '../api.ts';
 import { Confirm } from '../components/Confirm.tsx';
 import { ColumnsIcon, MoreIcon, SlidersIcon, SortIcon } from '../components/icons.tsx';
 import { Mascot } from '../components/Mascot.tsx';
-import { day, duration, flightLabel, radioLabel, time } from '../format.ts';
+import { date, time } from '../dates.ts';
+import { duration, flightLabel, radioLabel } from '../format.ts';
 import type { Texts } from '../texts.ts';
 import { usePrefs } from '../usePrefs.ts';
 
@@ -350,7 +351,7 @@ export function FlightsPage(props: { flights?: FlightView[]; run: Run; onOpen: (
               className="whitespace-nowrap"
             >
               <Table.Header>
-                <Table.Column className="w-0 pr-0">
+                <Table.Column className="w-0">
                   <SelectBox label={t.selectAll} />
                 </Table.Column>
                 <SortColumn id="date" label={t.colDate} />
@@ -368,14 +369,14 @@ export function FlightsPage(props: { flights?: FlightView[]; run: Run; onOpen: (
               </Table.Header>
               <Table.Body>
                 {shown.map((f) => {
-                  const label = flightLabel(f);
+                  const label = flightLabel(f, t.locale);
                   return (
                     <Table.Row key={f.key} id={f.key} textValue={label} className="cursor-pointer">
-                      <Table.Cell className="pr-0">
+                      <Table.Cell>
                         <SelectBox label={t.selectFlight(label)} />
                       </Table.Cell>
-                      <Table.Cell>{f.hasDate ? day(f.start) : '–'}</Table.Cell>
-                      {shows('time') ? <Table.Cell className="font-mono">{f.hasDate ? time(f.start) : '–'}</Table.Cell> : null}
+                      <Table.Cell className="tabular-nums">{f.hasDate ? date(f.start, t.locale) : '–'}</Table.Cell>
+                      {shows('time') ? <Table.Cell className="tabular-nums">{f.hasDate ? time(f.start, t.locale) : '–'}</Table.Cell> : null}
                       <Table.Cell className="font-medium">{f.model}</Table.Cell>
                       {shows('radio') ? <Table.Cell className="text-muted">{radioLabel(t, f)}</Table.Cell> : null}
                       {shows('duration') ? <Table.Cell className="text-right tabular-nums">{duration(f.duration)}</Table.Cell> : null}

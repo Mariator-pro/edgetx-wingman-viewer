@@ -14,7 +14,7 @@ import { startServer } from '../server/server.ts';
 
 const REPO_ROOT = resolve(import.meta.dirname, '../..');
 
-const HELP = `Usage: wingman-viewer <command> [path] [options]
+const HELP = `Usage: edgetx-wingman-viewer <command> [path] [options]
 
 Commands:
   ui        open the app in the browser
@@ -109,7 +109,7 @@ async function exportFlights(path: string | undefined, opts: { flight?: string; 
   if (opts.flight !== undefined) {
     const n = Number(opts.flight);
     chosen = list.filter((f) => f.n === n);
-    if (chosen.length === 0) throw new UsageError(`There is no flight ${opts.flight}. Run "wingman-viewer flights" to see the numbers.`);
+    if (chosen.length === 0) throw new UsageError(`There is no flight ${opts.flight}. Run "edgetx-wingman-viewer flights" to see the numbers.`);
   }
   if (chosen.length === 0) {
     console.log('No flights to save.');
@@ -162,7 +162,7 @@ async function main(): Promise<void> {
   if (command === 'ui') return ui();
   if (command === 'flights') return flights(path);
   if (command === 'export') return exportFlights(path, values);
-  throw new UsageError(`Unknown command "${command}". Run "wingman-viewer help" to see the commands.`);
+  throw new UsageError(`Unknown command "${command}". Run "edgetx-wingman-viewer help" to see the commands.`);
 }
 
 main().catch((e: unknown) => {

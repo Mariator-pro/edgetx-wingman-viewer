@@ -1,6 +1,8 @@
 import { Button, buttonVariants, Card } from '@heroui/react';
 import type { LastFlightView } from '../../core/flightbag-view.ts';
 import type { FlightView } from '../../server/api.ts';
+import { dateTime, time } from '../dates.ts';
+import { radioDay } from '../format.ts';
 import { usePrefs } from '../usePrefs.ts';
 
 const MINUTE = 60_000;
@@ -25,8 +27,11 @@ export function LastFlights(props: { list: LastFlightView[]; board: string; flig
   const { t } = usePrefs();
 
   const when = (e: LastFlightView) => {
-    if (!e.date) return e.time || t.fbNoClock;
-    return e.time ? `${e.date} ${e.time}` : e.date;
+    // as the radio stores them ("2026-11-12", "17:42"); anything else as it came
+    const clock = e.time && /^\d{2}:\d{2}$/.test(e.time) ? e.time : undefined;
+    if (!e.date) return clock ? time(`2000-01-01T${clock}`, t.locale) : e.time || t.fbNoClock;
+    if (clock && /^\d{4}-\d{2}-\d{2}$/.test(e.date)) return dateTime(`${e.date}T${clock}`, t.locale);
+    return e.time ? `${radioDay(e.date, t.locale)} ${e.time}` : radioDay(e.date, t.locale);
   };
   const copy = (e: LastFlightView) =>
     void navigator.clipboard.writeText(`${e.latText}, ${e.lonText}`).then(

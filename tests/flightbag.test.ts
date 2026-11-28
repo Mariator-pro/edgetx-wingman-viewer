@@ -110,6 +110,37 @@ describe.skipIf(!hasWingman)('Flight Bag models on a card', () => {
     expect(await readdir(join(c, 'SCRIPTS'))).not.toContain('._LIPONY');
   });
 
+  it("sets a model's own page and bar style of Wingman through Flight Bag's page logic", async () => {
+    const c = await card();
+    const v = await modelEdit(c, 'model1.yml', null);
+    expect(v.own?.map((o) => o.key)).toEqual(['gpsView', 'barStyle']);
+    const page = v.own?.[0];
+    expect(page?.label).toBe('Page style');
+    expect(page?.desc).toBe('Global: as set under Display (Compass). Or a choice only for this model.');
+    expect(page?.choices.map((x) => x.id)).toEqual(['', 'compass', 'horizon', 'tiles']);
+    expect(page?.choices[0]?.label).toBe('Global');
+    expect(v.draft.own ?? {}).toEqual({});
+
+    const draft = { ...v.draft, own: { gpsView: 'horizon', barStyle: 'zones' } };
+    const changed = await modelEdit(c, 'model1.yml', draft);
+    expect(changed.dirty).toBe(true);
+    expect(changed.draft.own).toEqual({ gpsView: 'horizon', barStyle: 'zones' });
+    await expect(changeModel(c, 'model1.yml', { ...v.draft, own: { gpsView: 'radar' } }, 'save')).rejects.toThrow();
+    expect(await changeModel(c, 'model1.yml', draft, 'save')).toEqual({});
+    const cfg = await readFile(join(c, 'SCRIPTS', 'WINGMAN', 'config.lua'), 'utf8');
+    expect(cfg).toMatch(/\["gpsView"\] = "horizon"/);
+    expect(cfg).toMatch(/\["barStyle"\] = "zones"/);
+    const list = (await flightBagView(c, 'models')).models?.list.find((m) => m.file === 'model1.yml');
+    expect(list?.modsText).toBe('Battery, Link, GPS (Horizon, Zones)');
+    const de = (await modelEdit(c, 'model1.yml', null, 'de')).own;
+    expect(de?.map((o) => o.label)).toEqual(['Seitenstil', 'Balkenstil']);
+    expect(de?.[0]?.choices[0]?.label).toBe('Global');
+
+    // back to Global: the model leaves Wingman's file
+    expect(await changeModel(c, 'model1.yml', { ...v.draft, own: {} }, 'save')).toEqual({});
+    expect(await readFile(join(c, 'SCRIPTS', 'WINGMAN', 'config.lua'), 'utf8')).not.toMatch(/model1\.yml/);
+  });
+
   it("adds and deletes a battery through Lipo Nanny's rules", async () => {
     const c = await card();
     const list = async () => (await flightBagView(c, 'batteries')).batteries?.list.map((b) => b.name);

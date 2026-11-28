@@ -17,6 +17,12 @@ body {
   color: var(--color-foreground);
 }
 
+/* HeroUI breaks tooltip text between any two letters ("USB-Sp|eicher"); break between words instead. */
+.tooltip {
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
 /* Button groups on the map get the surface colour behind them (#18181b in the dark theme), like the
    cards and fields there, instead of HeroUI's grey; the chosen toggle button is see-through on its own. */
 .map-control {

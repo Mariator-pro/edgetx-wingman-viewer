@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { isStickMode, type StickMode } from '../core/kinds.ts';
 import type { ListPrefs } from '../core/settings.ts';
 import { PREFS_META, type PrefsView } from '../server/api.ts';
 import { post } from './api.ts';
 import { LANGUAGES, TEXTS, type Lang } from './texts.ts';
+import { applyTheme, toTheme } from './appearance.ts';
+import { useCollapseShortcut } from './sidebarLayout.ts';
 import { PrefsContext, type Theme } from './usePrefs.ts';
 
 // The choices the server keeps and puts into the page. The port changes with every start, and the browser
@@ -25,9 +27,7 @@ const save = (prefs: PrefsView) => void post('/api/prefs', prefs).catch(() => {}
 export function PrefsProvider({ children }: { children: React.ReactNode }) {
   const [initial] = useState(served);
   const [lang, setLang] = useState<Lang>(() => pick(initial.lang, LANGUAGES.map((l) => l.id), 'en'));
-  const [theme, setTheme] = useState<Theme>(() =>
-    pick(initial.theme, ['light', 'dark'] as const, window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
-  );
+  const [theme, setTheme] = useState<Theme>(() => toTheme(initial.theme));
   const [sticks, setSticks] = useState<StickMode>(isStickMode(initial.sticks) ? initial.sticks : 2);
   const [attitudeShown, setAttitudeShown] = useState(initial.attitude !== 'hidden');
   const [moreShown, setMoreShown] = useState(initial.more === 'shown');
@@ -35,9 +35,8 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
+  const [look, setLook] = useState<'light' | 'dark'>('light');
+  useEffect(() => applyTheme(theme, setLook), [theme]);
   const chooseLang = (l: Lang) => {
     setLang(l);
     save({ lang: l });
@@ -63,7 +62,20 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
     setList(l);
     save({ list: l });
   };
+  // Cmd+B (Ctrl+B on Windows and Linux) switches too
+  const [collapsed, setCollapsed] = useState(() => initial.sidebarCollapsed === true);
+  const collapsedNow = useRef(collapsed);
+  const toggleSidebar = useCallback(() => {
+    collapsedNow.current = !collapsedNow.current;
+    setCollapsed(collapsedNow.current);
+    save({ sidebarCollapsed: collapsedNow.current });
+  }, []);
+  useCollapseShortcut(toggleSidebar);
   return (
-    <PrefsContext value={{ t: TEXTS[lang], lang, setLang: chooseLang, theme, setTheme: chooseTheme, sticks, setSticks: chooseSticks, attitudeShown, setAttitudeShown: chooseAttitude, moreShown, setMoreShown: chooseMore, list, setList: chooseList }}>{children}</PrefsContext>
+    <PrefsContext
+      value={{ t: TEXTS[lang], lang, setLang: chooseLang, theme, setTheme: chooseTheme, look, sticks, setSticks: chooseSticks, attitudeShown, setAttitudeShown: chooseAttitude, moreShown, setMoreShown: chooseMore, list, setList: chooseList, sidebarCollapsed: collapsed, toggleSidebar }}
+    >
+      {children}
+    </PrefsContext>
   );
 }

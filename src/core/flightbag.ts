@@ -28,6 +28,7 @@ import {
   type ModelsView,
   type ModelSummary,
   type ModuleView,
+  type OwnSettingView,
   type PackDraft,
   type RowView,
   type SensorFieldView,
@@ -384,6 +385,19 @@ local function modulesOf(M)
   return out
 end
 
+-- Wingman's display settings a model may have of its own (page and bar style), with their choices:
+-- id false means the one for all models. None with an older Flight Bag on the card.
+local function ownOf(M)
+  local out = {}
+  for _, k in ipairs(M.OWN_KEYS or {}) do
+    local labels, _, ids = M.ownChoices(k)
+    local choices = {}
+    for i, l in ipairs(labels) do choices[i] = { id = ids[i] or "", label = l } end
+    out[#out + 1] = { key = k, label = M.ownTitle(k), desc = M.ownHint(k), choices = choices }
+  end
+  return out
+end
+
 local function exists(path)
   local ok, st = pcall(fstat, path)
   return ok and st ~= nil
@@ -411,7 +425,7 @@ local function describeModels(M, list, current)
         if p then v.batteries[#v.batteries + 1] = p.name end
       end
     end
-    if m.mods then v.mods = m.mods end
+    if m.mods then v.mods, v.modsText = m.mods, M.modsText() end
     out.list[#out.list + 1] = v
   end
   local ok, files = pcall(function()
@@ -433,7 +447,9 @@ local function modelDraft(M)
   for i, id in ipairs(m.batteryIds or {}) do ids[i] = id end
   local sensors = {}
   for _, f in ipairs(M.SENSOR_FIELDS) do sensors[f.key] = m.sensors[f.key] end
-  return { cells = m.cells, parallel = m.parallel, batteryIds = ids, sensors = sensors, mods = m.mods }
+  local own = {}
+  for _, k in ipairs(M.OWN_KEYS or {}) do own[k] = m.own[k] end
+  return { cells = m.cells, parallel = m.parallel, batteryIds = ids, sensors = sensors, mods = m.mods, own = own }
 end
 
 -- Plays the dialog's model into the page logic: the same steps as on the radio's battery, sensor and
@@ -476,6 +492,15 @@ local function applyModel(M, d, lip)
   if m.mods and type(d.mods) == "table" then
     for _, k in ipairs(M.moduleKeys()) do
       if d.mods[k] ~= nil then m.mods[k] = d.mods[k] == true end
+    end
+  end
+  if type(d.own) == "table" then
+    for _, k in ipairs(M.OWN_KEYS or {}) do
+      local v, found = d.own[k], nil
+      local _, _, ids = M.ownChoices(k)
+      for i, id in ipairs(ids) do if id == (v or false) then found = i end end
+      if not found then error("invalid:own", 0) end
+      M.setOwn(k, ids[found])
     end
   end
 end
@@ -532,7 +557,7 @@ function fb_model(file, draft, action, names)
     end
     v.customSensors = M.sensorsAreCustom(M.model.sensors)
   end
-  if M.model.mods then v.modules = modulesOf(M) end
+  if M.model.mods then v.modules, v.own = modulesOf(M), ownOf(M) end
   return v
 end
 
@@ -754,6 +779,17 @@ function cleanBatteries(b: BatteriesView): BatteriesView {
 
 const bools = (v: unknown): Record<string, boolean> | undefined =>
   typeof v === 'object' && v !== null && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).filter(([, x]) => typeof x === 'boolean')) : undefined;
+const strings = (v: unknown): Record<string, string> | undefined =>
+  typeof v === 'object' && v !== null && !Array.isArray(v)
+    ? Object.fromEntries(Object.entries(v).flatMap(([k, x]) => (typeof x === 'string' ? [[k, printable(x)]] : [])))
+    : undefined;
+const cleanOwn = (v: unknown): OwnSettingView[] =>
+  arr<OwnSettingView>(v).map((o) => ({
+    key: t(o.key) ?? '',
+    label: t(o.label) ?? '',
+    ...opt('desc', t(o.desc)),
+    choices: arr<{ id: unknown; label: unknown }>(o.choices).map((c) => ({ id: t(c.id) ?? '', label: t(c.label) ?? '' })),
+  }));
 const cleanModules = (v: unknown): ModuleView[] => arr<ModuleView>(v).map((m) => ({ key: t(m.key) ?? '', label: t(m.label) ?? '', ...opt('desc', t(m.desc)) }));
 
 function cleanModels(m: ModelsView): ModelsView {
@@ -774,6 +810,7 @@ function cleanModels(m: ModelsView): ModelsView {
       ...(x.batteries !== undefined ? { batteries: arr<string>(x.batteries).map((b) => t(b) ?? '') } : {}),
       ...(x.customSensors !== undefined ? { customSensors: x.customSensors === true } : {}),
       ...opt('mods', bools(x.mods)),
+      ...opt('modsText', t(x.modsText)),
     })),
   };
 }
@@ -984,6 +1021,7 @@ function cleanModelDraft(d: ModelDraft): ModelDraft {
     ...(d.batteryIds !== undefined ? { batteryIds: arr<string>(d.batteryIds).map((id) => t(id) ?? '') } : {}),
     sensors: Object.fromEntries(Object.entries(sensors).flatMap(([k, v]) => (typeof v === 'string' ? [[k, printable(v)]] : []))),
     ...opt('mods', bools(d.mods)),
+    ...opt('own', strings(d.own)),
   };
 }
 
@@ -1028,6 +1066,7 @@ export async function modelEdit(card: string, file: unknown, draft: unknown, lan
       : {}),
     ...(v.customSensors !== undefined ? { customSensors: v.customSensors === true } : {}),
     ...(v.modules !== undefined ? { modules: cleanModules(v.modules) } : {}),
+    ...(v.own !== undefined ? { own: cleanOwn(v.own) } : {}),
   };
 }
 

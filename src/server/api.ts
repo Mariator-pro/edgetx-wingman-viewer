@@ -114,11 +114,12 @@ export const FILE_NAME_HEADER = 'x-file-name';
 // what a page stores per port, so it would forget them.
 export interface PrefsView {
   lang?: string;
-  theme?: 'light' | 'dark';
+  theme?: 'system' | 'light' | 'dark';
   sticks?: StickMode; // stick mode for logs without the radio's settings
   attitude?: 'shown' | 'hidden'; // the attitude view on the map, or only its button
   more?: 'shown' | 'hidden'; // the other values of the log in the values bar, open or folded
   list?: ListPrefs; // filters, order and hidden columns of the list of flights
+  sidebarCollapsed?: boolean; // the sidebar shows only its icons
 }
 export const PREFS_META = 'wingman-viewer-prefs';
 

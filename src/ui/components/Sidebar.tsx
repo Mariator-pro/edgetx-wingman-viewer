@@ -1,13 +1,40 @@
-import { Button, ListBox, Select, Spinner, ToggleButton, ToggleButtonGroup } from '@heroui/react';
-import { useRef } from 'react';
+import { Button, Spinner, Tooltip } from '@heroui/react';
+import { useRef, type ReactNode } from 'react';
 import type { ProgressEvent, RadioView, StateView } from '../../server/api.ts';
-import { dateTime } from '../format.ts';
-import { LANGUAGES, type Lang } from '../texts.ts';
-import { usePrefs, type Theme } from '../usePrefs.ts';
-import { BagIcon, ListIcon, MapIcon, MoonIcon, SettingsIcon, SunIcon, UploadIcon } from './icons.tsx';
+import { ago, dateTime, useNow } from '../dates.ts';
+import { sidebarClass } from '../sidebarLayout.ts';
+import { usePrefs } from '../usePrefs.ts';
+import { AppUpdateIcon, BagIcon, ListIcon, MapIcon, RadiosIcon, SettingsIcon, TrashIcon, UploadIcon } from './icons.tsx';
 import { ConnectedRadios } from './ConnectedRadios.tsx';
+import { NavGroup, NavItem, SidebarHeader, ThemeSwitch } from './SidebarParts.tsx';
+
+// "RadioMaster TX16S MK3" below the radio's icon in the collapsed sidebar: "TX16S", the word after the maker.
+const shortName = (name: string) => {
+  const words = name.split(' ');
+  return (words[1] ?? words[0]!).slice(0, 7);
+};
 
 export type Page = 'flights' | 'viewer' | 'flightbag' | 'settings';
+
+// An icon button of the collapsed sidebar with its text in a tooltip on the right.
+function IconAction(props: { label: string; note?: ReactNode; children: ReactNode; variant: 'primary' | 'outline' | 'ghost'; size?: 'sm'; isDisabled?: boolean; className?: string; onPress: () => void }) {
+  const { label, note, children, ...button } = props;
+  return (
+    <div className="flex justify-center">
+      <Tooltip delay={300} closeDelay={0}>
+        <Button isIconOnly aria-label={label} {...button}>
+          {children}
+        </Button>
+        <Tooltip.Content placement="right" offset={14}>
+          <span className="flex max-w-60 flex-col">
+            <span>{label}</span>
+            {note && <span className="text-xs text-muted">{note}</span>}
+          </span>
+        </Tooltip.Content>
+      </Tooltip>
+    </div>
+  );
+}
 
 export function Sidebar(props: {
   state?: StateView;
@@ -21,156 +48,196 @@ export function Sidebar(props: {
   onAppUpdate: () => void;
 }) {
   const { state, progress, page, viewerLabel, canView, onNavigate, onCleanUp, onImport, onAppUpdate } = props;
-  const { t, lang, setLang, theme, setTheme } = usePrefs();
+  const { t, theme, setTheme, sidebarCollapsed: collapsed, toggleSidebar } = usePrefs();
+  const now = useNow();
   const file = useRef<HTMLInputElement>(null);
   const appUpdate = state?.appUpdate;
   const updatingApp = state?.busy === 'appUpdate';
+  const appUpdateText = appUpdate
+    ? appUpdate.restarting
+      ? t.appRestarting
+      : updatingApp
+        ? t.appDownloading(progress?.op === 'appUpdate' ? (progress.done ?? 0) : 0)
+        : t.appUpdateAvailable(appUpdate.version)
+    : '';
+  const copiedText = state?.lastSync ? t.lastCopied(ago(state.lastSync, t.locale, now)) : t.notCopied;
   const overview = [
     { page: 'flights' as const, label: t.flights, Icon: ListIcon },
     { page: 'viewer' as const, label: t.viewer, Icon: MapIcon, sub: viewerLabel, off: !canView },
     { page: 'flightbag' as const, label: t.flightBag, Icon: BagIcon, off: !state?.radios.length },
-    { page: 'settings' as const, label: t.settings, Icon: SettingsIcon },
   ];
-  // Always dark: the "dark" class gives its HeroUI controls dark colours in the light theme too.
-  // The language list opens outside the sidebar, so it carries the class and its text colour itself.
-  // On wide screens it stays in place while long pages scroll, so its bottom row stays visible.
-  const item = 'flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-left no-underline transition-colors';
+  const radioText = (r: RadioView) => (state?.busy === 'sync' ? t.copying : r.newFlights > 0 ? t.newFlights(r.newFlights) : t.noNewFlights);
   return (
-    // fixed on wide windows: always as high as the window, however long the page or a menu below it
-    <nav
-      aria-label={t.nav}
-      className="dark flex flex-[1_1_240px] flex-col gap-6 bg-zinc-900 px-3.5 py-5 text-zinc-200 md:fixed md:inset-y-0 md:left-0 md:z-20 md:w-60 md:overflow-y-auto"
-    >
-      <div className="flex items-center gap-2.5 px-2">
-        <img src="/favicon.svg" alt="" className="size-[30px] shrink-0" />
-        <span className="flex min-w-0 flex-col">
-          <span className="font-semibold whitespace-nowrap text-white">{t.appName}</span>
-          <span className="text-xs text-zinc-400">v{__APP_VERSION__}</span>
-        </span>
-      </div>
+    <nav aria-label={t.nav} className={sidebarClass(collapsed)}>
+      <SidebarHeader
+        collapsed={collapsed}
+        onToggle={toggleSidebar}
+        name={t.appName}
+        version={__APP_VERSION__}
+        texts={{ collapse: t.collapseSidebar, expand: t.expandSidebar, ctrl: t.ctrlKey }}
+      />
 
-      {appUpdate && (
-        <div className="flex flex-col gap-2 rounded-xl bg-zinc-800 p-3">
-          <span className="text-xs text-zinc-300">
-            {appUpdate.restarting
-              ? t.appRestarting
-              : updatingApp
-                ? t.appDownloading(progress?.op === 'appUpdate' ? (progress.done ?? 0) : 0)
-                : t.appUpdateAvailable(appUpdate.version)}
-          </span>
-          {appUpdate.installable ? (
-            <Button variant="primary" isDisabled={!!state?.busy || appUpdate.restarting} onPress={onAppUpdate}>
-              {(updatingApp || appUpdate.restarting) && <Spinner size="sm" color="current" />}
-              {t.appUpdateInstall}
-            </Button>
+      {appUpdate &&
+        (collapsed ? (
+          appUpdate.installable ? (
+            <IconAction
+              variant="primary"
+              label={appUpdateText}
+              note={!updatingApp && !appUpdate.restarting && t.appUpdateClick}
+              isDisabled={!!state?.busy || appUpdate.restarting}
+              onPress={onAppUpdate}
+            >
+              {updatingApp || appUpdate.restarting ? <Spinner size="sm" color="current" /> : <AppUpdateIcon />}
+            </IconAction>
           ) : (
-            <a href={appUpdate.url} target="_blank" rel="noreferrer" className="text-sm font-medium text-accent no-underline hover:underline">
-              {t.appUpdateDownload}
-            </a>
-          )}
-        </div>
-      )}
+            <IconAction variant="ghost" className="text-accent" label={appUpdateText} note={t.appUpdateLink} onPress={() => window.open(appUpdate.url, '_blank', 'noreferrer')}>
+              <AppUpdateIcon />
+            </IconAction>
+          )
+        ) : (
+          <div className="flex flex-col gap-2 rounded-xl bg-zinc-800 p-3">
+            <span className="text-xs text-zinc-300">{appUpdateText}</span>
+            {appUpdate.installable ? (
+              <Button variant="primary" isDisabled={!!state?.busy || appUpdate.restarting} onPress={onAppUpdate}>
+                {(updatingApp || appUpdate.restarting) && <Spinner size="sm" color="current" />}
+                {t.appUpdateInstall}
+              </Button>
+            ) : (
+              <a href={appUpdate.url} target="_blank" rel="noreferrer" className="text-sm font-medium text-accent no-underline hover:underline">
+                {t.appUpdateDownload}
+              </a>
+            )}
+          </div>
+        ))}
 
-      <div className="flex flex-col gap-1.5">
-        <span className="px-2 text-[11px] font-medium tracking-wider text-zinc-400 uppercase">{t.radioHeading}</span>
-        <ConnectedRadios radios={state?.radios} text={t.noRadio}>
-          {(radios) =>
-            radios.map((r) => (
-              <div key={r.volume} className="flex flex-col gap-2 rounded-xl px-2.5 py-2">
-                <div className="flex items-center gap-2.5">
-                  <span className="size-2 shrink-0 rounded-full bg-green-400" aria-hidden="true" />
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="font-semibold">{r.name}</span>
-                    <span className="truncate text-xs text-zinc-400">
-                      {state?.busy === 'sync' ? t.copying : r.newFlights > 0 ? t.newFlights(r.newFlights) : t.noNewFlights}
-                    </span>
-                  </span>
-                </div>
-                <Button size="sm" variant="outline" className="text-white" isDisabled={!!state?.busy} onPress={() => onCleanUp(r)}>
-                  {state?.busy === 'cleanup' && <Spinner size="sm" color="current" />}
-                  {t.cleanUp}
-                </Button>
+      <NavGroup collapsed={collapsed} label={t.radioHeading}>
+        {collapsed ? (
+          state?.radios.length === 0 ? (
+            <NavItem
+              collapsed
+              active={false}
+              icon={
+                <span className="text-zinc-500">
+                  <RadiosIcon />
+                </span>
+              }
+              label={t.noRadioConnected}
+              short={t.sidebarShort.noRadio}
+              note={t.noRadio}
+              onPress={() => {}}
+            />
+          ) : (
+            state?.radios.map((r) => (
+              <div key={r.volume} className="flex flex-col gap-1.5">
+                <NavItem
+                  collapsed
+                  active={false}
+                  icon={<RadiosIcon className="text-green-400" />}
+                  label={r.name}
+                  short={shortName(r.name)}
+                  note={radioText(r)}
+                  mark={(className) =>
+                    r.newFlights > 0 && (
+                      // beside the icon, not on it (the shared position is for small dots)
+                      <span className={`${className} -top-2! -right-3! grid h-4 min-w-4 place-items-center rounded-full bg-amber-400 px-1 text-[10.5px] font-bold text-zinc-900`} aria-hidden="true">
+                        {r.newFlights}
+                      </span>
+                    )
+                  }
+                  onPress={() => onNavigate('flights')}
+                />
+                <IconAction variant="outline" size="sm" className="text-white" label={t.cleanUp} isDisabled={!!state?.busy} onPress={() => onCleanUp(r)}>
+                  {state?.busy === 'cleanup' ? <Spinner size="sm" color="current" /> : <TrashIcon size={14} />}
+                </IconAction>
               </div>
             ))
-          }
-        </ConnectedRadios>
-      </div>
+          )
+        ) : (
+          <ConnectedRadios radios={state?.radios} text={t.noRadio}>
+            {(radios) =>
+              radios.map((r) => (
+                <div key={r.volume} className="flex flex-col gap-2 rounded-xl px-2.5 py-2">
+                  <div className="flex items-center gap-2.5">
+                    <RadiosIcon className="shrink-0 text-green-400" />
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="font-semibold">{r.name}</span>
+                      <span className="truncate text-xs text-zinc-400">{radioText(r)}</span>
+                    </span>
+                  </div>
+                  <Button size="sm" variant="outline" className="text-white" isDisabled={!!state?.busy} onPress={() => onCleanUp(r)}>
+                    {state?.busy === 'cleanup' && <Spinner size="sm" color="current" />}
+                    {t.cleanUp}
+                  </Button>
+                </div>
+              ))
+            }
+          </ConnectedRadios>
+        )}
+      </NavGroup>
 
-      <div className="flex flex-col gap-0.5">
-        <span className="px-2 pb-1.5 text-[11px] font-medium tracking-wider text-zinc-400 uppercase">{t.overview}</span>
+      <NavGroup collapsed={collapsed} label={t.overview}>
         {overview.map(({ page: target, label, Icon, sub, off }) => (
-          <button
+          <NavItem
             key={target}
-            type="button"
-            disabled={off}
-            onClick={() => onNavigate(target)}
-            aria-current={page === target ? 'page' : undefined}
-            className={`${item} ${page === target ? 'bg-zinc-800 text-white' : off ? 'cursor-default text-zinc-600' : 'hover:bg-zinc-800/60'}`}
-          >
-            <Icon />
-            <span className="flex min-w-0 flex-col">
-              {label}
-              {sub && <span className="truncate text-xs text-zinc-400">{sub}</span>}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-auto flex flex-col gap-3">
-        <div className="flex items-center gap-2 px-1">
-          <ToggleButtonGroup
-            aria-label={t.theme}
-            selectionMode="single"
-            disallowEmptySelection
-            selectedKeys={new Set([theme])}
-            onSelectionChange={(keys) => {
-              const v = [...keys][0];
-              if (v) setTheme(String(v) as Theme);
-            }}
-          >
-            <ToggleButton id="light" isIconOnly aria-label={t.light}>
-              <SunIcon size={16} />
-            </ToggleButton>
-            <ToggleButton id="dark" isIconOnly aria-label={t.dark}>
-              <MoonIcon size={16} />
-            </ToggleButton>
-          </ToggleButtonGroup>
-          <Select aria-label={t.language} className="min-w-0 flex-1" selectedKey={lang} onSelectionChange={(k) => k !== null && setLang(String(k) as Lang)}>
-            <Select.Trigger className="rounded-3xl border-0 bg-default shadow-none hover:bg-default-hover data-[hovered=true]:bg-default-hover">
-              <Select.Value />
-              <Select.Indicator />
-            </Select.Trigger>
-            <Select.Popover className="field-list dark text-foreground">
-              <ListBox>
-                {LANGUAGES.map((l) => (
-                  <ListBox.Item key={l.id} id={l.id} textValue={l.name}>
-                    {l.name}
-                    <ListBox.ItemIndicator />
-                  </ListBox.Item>
-                ))}
-              </ListBox>
-            </Select.Popover>
-          </Select>
-        </div>
-
-        <div className="flex flex-col gap-2 rounded-xl bg-zinc-800 p-3">
-          <span className="text-xs text-balance text-zinc-400">{state?.lastSync ? t.lastCopied(dateTime(state.lastSync).replaceAll(' ', '\u00a0')) : t.notCopied}</span>
-          <input
-            ref={file}
-            type="file"
-            accept=".csv,text/csv"
-            hidden
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              e.target.value = '';
-              if (f) onImport(f);
+            collapsed={collapsed}
+            active={page === target}
+            // an entry without a flight or radio stays pale and does nothing
+            icon={
+              <span className={off ? 'text-zinc-600' : ''}>
+                <Icon />
+              </span>
+            }
+            name={label}
+            label={
+              <span className={`flex min-w-0 flex-col ${off ? 'text-zinc-600' : ''}`}>
+                <span className="truncate">{label}</span>
+                {sub && <span className="truncate text-xs text-zinc-400">{sub}</span>}
+              </span>
+            }
+            short={t.sidebarShort[target]}
+            note={sub}
+            onPress={() => {
+              if (!off) onNavigate(target);
             }}
           />
-          <Button variant="outline" className="text-white" isDisabled={!!state?.busy} onPress={() => file.current?.click()}>
+        ))}
+      </NavGroup>
+
+      <div className="mt-auto flex flex-col gap-3">
+        <NavItem collapsed={collapsed} active={page === 'settings'} icon={<SettingsIcon />} label={t.settings} short={t.sidebarShort.settings} onPress={() => onNavigate('settings')} />
+        <ThemeSwitch
+          collapsed={collapsed}
+          theme={theme}
+          onChange={setTheme}
+          texts={{ theme: t.theme, light: t.light, dark: t.dark, system: t.systemTheme, switchTo: t.switchTheme }}
+        />
+
+        <input
+          ref={file}
+          type="file"
+          accept=".csv,text/csv"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            e.target.value = '';
+            if (f) onImport(f);
+          }}
+        />
+        {collapsed ? (
+          <IconAction variant="outline" className="text-white" label={t.importLog} note={copiedText} isDisabled={!!state?.busy} onPress={() => file.current?.click()}>
             <UploadIcon size={16} />
-            {t.importLog}
-          </Button>
-        </div>
+          </IconAction>
+        ) : (
+          <div className="flex flex-col gap-2 rounded-xl bg-zinc-800 p-3">
+            <span className="text-xs text-balance text-zinc-400" title={state?.lastSync && dateTime(state.lastSync, t.locale)}>
+              {copiedText}
+            </span>
+            <Button variant="outline" className="text-white" isDisabled={!!state?.busy} onPress={() => file.current?.click()}>
+              <UploadIcon size={16} />
+              {t.importLog}
+            </Button>
+          </div>
+        )}
       </div>
     </nav>
   );

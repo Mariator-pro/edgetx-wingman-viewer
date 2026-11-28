@@ -76,7 +76,7 @@ export function listPrefs(v: unknown): ListPrefs {
 }
 
 export interface Settings {
-  ui?: { lang?: string; theme?: 'light' | 'dark'; sticks?: StickMode; attitude?: 'shown' | 'hidden'; more?: 'shown' | 'hidden'; list?: ListPrefs }; // interface language, theme, stick mode (for logs without the radio's settings), the attitude view on the map and the other values of the log in the values bar, as last chosen
+  ui?: { lang?: string; theme?: 'system' | 'light' | 'dark'; sticks?: StickMode; attitude?: 'shown' | 'hidden'; more?: 'shown' | 'hidden'; list?: ListPrefs; sidebarCollapsed?: boolean }; // interface language, theme, stick mode (for logs without the radio's settings), the attitude view on the map, the other values of the log in the values bar, the list of flights and the collapsed sidebar, as last chosen
   map?: MapSettings;
   lastSync?: string; // when logs were last copied from an SD card
 }
@@ -89,11 +89,12 @@ export async function loadSettings(file: string): Promise<Settings> {
   return {
     ui: {
       ...(typeof ui.lang === 'string' && /^[a-z]{2}$/.test(ui.lang) ? { lang: ui.lang } : {}),
-      ...(ui.theme === 'light' || ui.theme === 'dark' ? { theme: ui.theme } : {}),
+      ...(ui.theme === 'system' || ui.theme === 'light' || ui.theme === 'dark' ? { theme: ui.theme } : {}),
       ...(isStickMode(ui.sticks) ? { sticks: ui.sticks } : {}),
       ...(ui.attitude === 'shown' || ui.attitude === 'hidden' ? { attitude: ui.attitude } : {}),
       ...(ui.more === 'shown' || ui.more === 'hidden' ? { more: ui.more } : {}),
       ...(isObject(ui.list) ? { list: listPrefs(ui.list) } : {}),
+      ...(typeof ui.sidebarCollapsed === 'boolean' ? { sidebarCollapsed: ui.sidebarCollapsed } : {}),
     },
     map: {
       ...(validTiles(map.tiles) ? { tiles: map.tiles } : {}),

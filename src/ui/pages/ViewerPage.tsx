@@ -4,7 +4,8 @@ import type { ExportFormat, FlightDetailView, PackView } from '../../server/api.
 import { get, post, tokenUrl } from '../api.ts';
 import { BADGE } from '../components/badge.ts';
 import { BatteryIcon, ChevronLeftIcon, ChevronRightIcon, DownloadIcon, MoreIcon, NoteIcon, PlusIcon, TagIcon } from '../components/icons.tsx';
-import { altitude, day, distance, duration, radioLabel, time } from '../format.ts';
+import { dateTime, time } from '../dates.ts';
+import { altitude, distance, duration, radioLabel } from '../format.ts';
 import { usePrefs } from '../usePrefs.ts';
 
 type Run = (fn: () => Promise<unknown>) => void;
@@ -48,7 +49,7 @@ export function ViewerPage(props: {
         if (gone) return;
         setFlight(f);
         setMissing(false);
-        onLabel(f.hasDate ? `${f.model}, ${time(f.start)}` : f.model);
+        onLabel(f.hasDate ? `${f.model}, ${time(f.start, t.locale)}` : f.model);
       },
       () => !gone && setMissing(true),
     );
@@ -80,7 +81,7 @@ export function ViewerPage(props: {
     setTag('');
     setTagOpen(false);
   };
-  const subtitle = f.sample ? t.sampleText : [f.hasDate ? `${day(f.start)} ${time(f.start)}` : f.file, radioLabel(t, f)].join(' · ');
+  const subtitle = f.sample ? t.sampleText : [f.hasDate ? dateTime(f.start, t.locale) : f.file, radioLabel(t, f)].join(' · ');
   const facts = [
     t.flightDuration(duration(f.duration)),
     t.maxDistance(distance(f.maxDistance, t.locale)),
@@ -273,7 +274,7 @@ function PackChip({ pack }: { pack: PackView }) {
   const rows: [string, string][] = [];
   if (pack.capacity !== undefined) rows.push([t.packCapacity, `${pack.cells ? `${pack.cells}S ` : ''}${pack.capacity.toLocaleString(t.locale)} mAh`]);
   if (pack.cycles !== undefined) rows.push([t.packCycles, pack.cycles.toLocaleString(t.locale)]);
-  if (pack.wear !== undefined) rows.push([t.packWear, `${pack.wear} %`]);
+  if (pack.wear !== undefined) rows.push([t.packWear, `${pack.wear}\u00a0%`]);
   if (pack.lastUsed) rows.push([t.packLastUsed, pack.lastUsed]);
   return (
     <Popover>
